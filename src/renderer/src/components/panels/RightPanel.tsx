@@ -255,7 +255,7 @@ export function RightPanel() {
   return (
     <aside 
       ref={containerRef}
-      className="flex h-full w-[320px] flex-col border-l border-border bg-sidebar overflow-hidden"
+      className="flex h-full w-full flex-col border-l border-border bg-sidebar overflow-hidden"
     >
       {/* TASKS */}
       <div className="flex flex-col shrink-0 border-b border-border">
@@ -451,23 +451,22 @@ function FilesContent() {
         <div className="px-3 py-2 text-[10px] text-muted-foreground truncate border-b border-border/50 bg-background/30">
           {workspacePath}
         </div>
-      )}
-      <div className="py-1">
-        {workspaceFiles.map(file => (
-          <div
-            key={file.path}
-            className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-background-interactive"
-          >
-            <FolderTree className="size-3.5 text-muted-foreground shrink-0" />
-            <span className="truncate flex-1">{file.path.split('/').pop()}</span>
-            {file.size && (
-              <span className="text-[10px] text-muted-foreground tabular-nums">
-                {formatSize(file.size)}
-              </span>
-            )}
-          </div>
-        ))}
-      </div>
+        <div className="py-1 overflow-auto flex-1">
+          {workspaceFiles.map(file => (
+            <div
+              key={file.path}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-background-interactive"
+            >
+              <FolderTree className="size-3.5 text-muted-foreground shrink-0" />
+              <span className="truncate flex-1">{file.path.split('/').pop()}</span>
+              {file.size && (
+                <span className="text-[10px] text-muted-foreground tabular-nums">
+                  {formatSize(file.size)}
+                </span>
+              )}
+            </div>
+          ))}
+        </div>
     </div>
   )
 }
