@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { createDeepAgent } from 'deepagents'
 import { app } from 'electron'
 import { join } from 'path'
@@ -5,6 +6,11 @@ import { getDefaultModel, getApiKey } from '../ipc/models'
 import { ChatAnthropic } from '@langchain/anthropic'
 import { ChatOpenAI } from '@langchain/openai'
 import { SqlJsSaver } from '../checkpointer/sqljs-saver'
+
+import type * as _lcTypes from 'langchain'
+import type * as _lcMessages from '@langchain/core/messages'
+import type * as _lcLanggraph from '@langchain/langgraph'
+import type * as _lcZodTypes from '@langchain/core/utils/types'
 
 // Singleton checkpointer instance
 let checkpointer: SqlJsSaver | null = null
@@ -19,7 +25,7 @@ export async function getCheckpointer(): Promise<SqlJsSaver> {
 }
 
 // Get the appropriate model instance based on configuration
-function getModelInstance(modelId?: string) {
+function getModelInstance(modelId?: string): ChatAnthropic | ChatOpenAI | string {
   const model = modelId || getDefaultModel()
   console.log('[Runtime] Using model:', model)
 
@@ -54,30 +60,29 @@ function getModelInstance(modelId?: string) {
 }
 
 // Create agent runtime with configured model and checkpointer
+export type AgentRuntime = ReturnType<typeof createDeepAgent>
+
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export async function createAgentRuntime(modelId?: string) {
   console.log('[Runtime] Creating agent runtime...')
-  
+
   const model = getModelInstance(modelId)
   console.log('[Runtime] Model instance created:', typeof model)
-  
+
   const saver = await getCheckpointer()
   console.log('[Runtime] Checkpointer ready')
 
-  // Using type assertion to work around version compatibility issues
-  // between @langchain packages and deepagentsjs types
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const agent = createDeepAgent({
-    model: model as any,
-    checkpointer: saver as any
+    model: model,
+    checkpointer: saver
   })
-  
-  console.log('[Runtime] Deep agent created')
 
+  console.log('[Runtime] Deep agent created')
   return agent
 }
 
 // Clean up resources
-export async function closeRuntime() {
+export async function closeRuntime(): Promise<void> {
   if (checkpointer) {
     await checkpointer.close()
     checkpointer = null

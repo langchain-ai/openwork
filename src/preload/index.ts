@@ -25,28 +25,65 @@ const api = {
   agent: {
     // Send message and receive events via callback
     invoke: (
-      threadId: string, 
-      message: string, 
+      threadId: string,
+      message: string,
       onEvent: (event: StreamEvent) => void
     ): (() => void) => {
       console.log('[Preload] invoke() called', { threadId, message: message.substring(0, 50) })
-      
+
       const channel = `agent:stream:${threadId}`
-      
-      const handler = (_: unknown, data: StreamEvent) => {
+
+      const handler = (_: unknown, data: StreamEvent): void => {
         console.log('[Preload] Received event:', data.type)
         onEvent(data)
-        
+
         // Clean up listener on terminal events
         if (data.type === 'done' || data.type === 'error') {
           ipcRenderer.removeListener(channel, handler)
         }
       }
-      
+
       ipcRenderer.on(channel, handler)
       console.log('[Preload] Sending agent:invoke IPC')
       ipcRenderer.send('agent:invoke', { threadId, message })
-      
+
+      // Return cleanup function
+      return () => {
+        ipcRenderer.removeListener(channel, handler)
+      }
+    },
+    // Stream agent events for useStream transport
+    streamAgent: (
+      threadId: string,
+      message: string,
+      command: unknown,
+      onEvent: (event: StreamEvent) => void
+    ): (() => void) => {
+      console.log('[Preload] streamAgent() called', { threadId, message: message.substring(0, 50) })
+
+      const channel = `agent:stream:${threadId}`
+
+      const handler = (_: unknown, data: StreamEvent): void => {
+        console.log('[Preload] Received stream event:', data.type)
+        onEvent(data)
+
+        // Clean up listener on terminal events
+        if (data.type === 'done' || data.type === 'error') {
+          ipcRenderer.removeListener(channel, handler)
+        }
+      }
+
+      ipcRenderer.on(channel, handler)
+
+      // If we have a command, it might be a resume/retry
+      if (command) {
+        console.log('[Preload] Sending agent:resume IPC')
+        ipcRenderer.send('agent:resume', { threadId, command })
+      } else {
+        console.log('[Preload] Sending agent:invoke IPC')
+        ipcRenderer.send('agent:invoke', { threadId, message })
+      }
+
       // Return cleanup function
       return () => {
         ipcRenderer.removeListener(channel, handler)

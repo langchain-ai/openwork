@@ -5,83 +5,75 @@ interface AppState {
   // Threads
   threads: Thread[]
   currentThreadId: string | null
-  
+
   // Messages for current thread
   messages: Message[]
-  
-  // Streaming state - per-thread to allow concurrent runs
-  streamingThreads: Set<string>
-  streamingContent: Record<string, string>  // threadId -> content
-  
+
   // HITL state
   pendingApproval: HITLRequest | null
-  
+
   // Todos (from agent)
   todos: Todo[]
-  
+
   // Workspace files (from agent)
   workspaceFiles: FileInfo[]
   workspacePath: string | null
-  
+
   // Subagents (from agent)
   subagents: Subagent[]
-  
+
   // Models
   models: ModelConfig[]
   currentModel: string
-  
+
   // Right panel state
   rightPanelTab: 'todos' | 'files' | 'subagents'
-  
+
   // Settings dialog state
   settingsOpen: boolean
-  
+
   // Sidebar state
   sidebarCollapsed: boolean
-  
+
   // Actions
   loadThreads: () => Promise<void>
   createThread: (metadata?: Record<string, unknown>) => Promise<Thread>
   selectThread: (threadId: string) => Promise<void>
   deleteThread: (threadId: string) => Promise<void>
   updateThread: (threadId: string, updates: Partial<Thread>) => Promise<void>
-  
+
   // Message actions
-  sendMessage: (content: string) => Promise<void>
   appendMessage: (message: Message) => void
   setMessages: (messages: Message[]) => void
-  
-  // Streaming actions
-  isThreadStreaming: (threadId: string) => boolean
-  getStreamingContent: (threadId: string) => string
-  setThreadStreaming: (threadId: string, streaming: boolean) => void
-  appendStreamingContent: (threadId: string, content: string) => void
-  clearStreamingContent: (threadId: string) => void
-  
+  generateTitleForFirstMessage: (threadId: string, content: string) => Promise<void>
+
   // HITL actions
   setPendingApproval: (request: HITLRequest | null) => void
-  respondToApproval: (decision: 'approve' | 'reject' | 'edit', editedArgs?: Record<string, unknown>) => Promise<void>
-  
+  respondToApproval: (
+    decision: 'approve' | 'reject' | 'edit',
+    editedArgs?: Record<string, unknown>
+  ) => Promise<void>
+
   // Todo actions
   setTodos: (todos: Todo[]) => void
-  
+
   // Workspace actions
   setWorkspaceFiles: (files: FileInfo[]) => void
   setWorkspacePath: (path: string | null) => void
-  
+
   // Subagent actions
   setSubagents: (subagents: Subagent[]) => void
-  
+
   // Model actions
   loadModels: () => Promise<void>
   setCurrentModel: (modelId: string) => Promise<void>
-  
+
   // Panel actions
   setRightPanelTab: (tab: 'todos' | 'files' | 'subagents') => void
-  
+
   // Settings actions
   setSettingsOpen: (open: boolean) => void
-  
+
   // Sidebar actions
   toggleSidebar: () => void
   setSidebarCollapsed: (collapsed: boolean) => void
@@ -92,8 +84,6 @@ export const useAppStore = create<AppState>((set, get) => ({
   threads: [],
   currentThreadId: null,
   messages: [],
-  streamingThreads: new Set<string>(),
-  streamingContent: {},
   pendingApproval: null,
   todos: [],
   workspaceFiles: [],
@@ -109,7 +99,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   loadThreads: async () => {
     const threads = await window.api.threads.list()
     set({ threads })
-    
+
     // Select first thread if none selected
     if (!get().currentThreadId && threads.length > 0) {
       await get().selectThread(threads[0].thread_id)
@@ -118,7 +108,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   createThread: async (metadata?: Record<string, unknown>) => {
     const thread = await window.api.threads.create(metadata)
-    set(state => ({ 
+    set((state) => ({
       threads: [thread, ...state.threads],
       currentThreadId: thread.thread_id,
       messages: []
@@ -127,12 +117,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   selectThread: async (threadId: string) => {
-    set({ currentThreadId: threadId, messages: [], todos: [], workspaceFiles: [], workspacePath: null, subagents: [] })
-    
+    set({
+      currentThreadId: threadId,
+      messages: [],
+      todos: [],
+      workspaceFiles: [],
+      workspacePath: null,
+      subagents: []
+    })
+
     // Load thread history from checkpoints
     try {
       const history = await window.api.threads.getHistory(threadId)
-      
+
       // Get the most recent checkpoint (first in the list since it's ordered DESC)
       if (history.length > 0) {
         const latestCheckpoint = history[0] as {
@@ -153,9 +150,9 @@ export const useAppStore = create<AppState>((set, get) => ({
             }
           }
         }
-        
+
         const channelValues = latestCheckpoint.checkpoint?.channel_values
-        
+
         // Extract messages
         if (channelValues?.messages && Array.isArray(channelValues.messages)) {
           const messages: Message[] = channelValues.messages.map((msg, index) => {
@@ -173,7 +170,7 @@ export const useAppStore = create<AppState>((set, get) => ({
               else if (msg.type === 'system') role = 'system'
               else if (msg.type === 'tool') role = 'tool'
             }
-            
+
             // Handle content - could be string or array of content blocks
             let content: Message['content'] = ''
             if (typeof msg.content === 'string') {
@@ -181,7 +178,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             } else if (Array.isArray(msg.content)) {
               content = msg.content as Message['content']
             }
-            
+
             return {
               id: msg.id || `msg-${index}`,
               role,
@@ -190,10 +187,10 @@ export const useAppStore = create<AppState>((set, get) => ({
               created_at: new Date()
             }
           })
-          
+
           set({ messages })
         }
-        
+
         // Extract todos if present
         if (channelValues?.todos && Array.isArray(channelValues.todos)) {
           const todos: Todo[] = channelValues.todos.map((todo, index) => ({
@@ -201,7 +198,7 @@ export const useAppStore = create<AppState>((set, get) => ({
             content: todo.content || '',
             status: (todo.status as Todo['status']) || 'pending'
           }))
-          
+
           set({ todos })
         }
       }
@@ -215,21 +212,21 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       await window.api.threads.delete(threadId)
       console.log('[Store] Thread deleted from backend')
-      
-      set(state => {
-        const threads = state.threads.filter(t => t.thread_id !== threadId)
+
+      set((state) => {
+        const threads = state.threads.filter((t) => t.thread_id !== threadId)
         const wasCurrentThread = state.currentThreadId === threadId
-        const newCurrentId = wasCurrentThread 
-          ? threads[0]?.thread_id || null 
+        const newCurrentId = wasCurrentThread
+          ? threads[0]?.thread_id || null
           : state.currentThreadId
-        
-        console.log('[Store] Updating state:', { 
-          remainingThreads: threads.length, 
-          wasCurrentThread, 
-          newCurrentId 
+
+        console.log('[Store] Updating state:', {
+          remainingThreads: threads.length,
+          wasCurrentThread,
+          newCurrentId
         })
-        
-        return { 
+
+        return {
           threads,
           currentThreadId: newCurrentId,
           // Clear messages if we deleted the current thread
@@ -248,127 +245,18 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateThread: async (threadId: string, updates: Partial<Thread>) => {
     const updated = await window.api.threads.update(threadId, updates)
-    set(state => ({
-      threads: state.threads.map(t => t.thread_id === threadId ? updated : t)
+    set((state) => ({
+      threads: state.threads.map((t) => (t.thread_id === threadId ? updated : t))
     }))
   },
 
   // Message actions
-  sendMessage: async (content: string) => {
-    const { currentThreadId } = get()
-    console.log('[Store] sendMessage called', { currentThreadId, content: content.substring(0, 50) })
-    
-    if (!currentThreadId) {
-      console.error('[Store] No currentThreadId!')
-      return
-    }
-
-    const threadId = currentThreadId
-
-    // Add user message immediately
-    const userMessage: Message = {
-      id: crypto.randomUUID(),
-      role: 'user',
-      content,
-      created_at: new Date()
-    }
-    
-    const isFirstMessage = get().messages.length === 0
-    
-    set(state => ({ 
-      messages: [...state.messages, userMessage]
-    }))
-    
-    // Auto-generate title on first message
-    if (isFirstMessage) {
-      try {
-        const generatedTitle = await window.api.threads.generateTitle(content)
-        await get().updateThread(threadId, { title: generatedTitle })
-      } catch (error) {
-        console.error('[Store] Failed to generate title:', error)
-      }
-    }
-    
-    // Set this thread as streaming
-    get().setThreadStreaming(threadId, true)
-    get().clearStreamingContent(threadId)
-
-    // Stream agent response using callback pattern
-    try {
-      console.log('[Store] Checking window.api:', !!window.api, !!window.api?.agent)
-      console.log('[Store] About to call window.api.agent.invoke')
-      
-      // The cleanup function is returned but auto-removes on done/error events
-      window.api.agent.invoke(threadId, content, (event) => {
-        console.log('[Store] Received event:', event.type)
-        switch (event.type) {
-          case 'message':
-            // Only update if this is still the current thread
-            if (get().currentThreadId === threadId) {
-              get().appendMessage(event.message)
-            }
-            break
-          case 'token':
-            get().appendStreamingContent(threadId, event.token)
-            break
-          case 'interrupt':
-            set({ pendingApproval: event.request })
-            break
-          case 'tool_call':
-            // Could show tool call in progress
-            break
-          case 'todos':
-            // Only update if this is still the current thread
-            if (get().currentThreadId === threadId) {
-              get().setTodos(event.todos)
-            }
-            break
-          case 'workspace':
-            console.log('[Store] Received workspace event:', { 
-              files: event.files.length, 
-              path: event.path,
-              isCurrentThread: get().currentThreadId === threadId
-            })
-            // Only update if this is still the current thread
-            if (get().currentThreadId === threadId) {
-              get().setWorkspaceFiles(event.files)
-              get().setWorkspacePath(event.path)
-            }
-            break
-          case 'subagents':
-            console.log('[Store] Received subagents event:', { 
-              count: event.subagents.length,
-              isCurrentThread: get().currentThreadId === threadId
-            })
-            // Only update if this is still the current thread
-            if (get().currentThreadId === threadId) {
-              get().setSubagents(event.subagents)
-            }
-            break
-          case 'done':
-            get().setThreadStreaming(threadId, false)
-            get().clearStreamingContent(threadId)
-            break
-          case 'error':
-            console.error('[Store] Stream error:', event.error)
-            get().setThreadStreaming(threadId, false)
-            get().clearStreamingContent(threadId)
-            break
-        }
-      })
-      console.log('[Store] invoke() called')
-    } catch (error) {
-      console.error('[Store] Failed to send message:', error)
-      get().setThreadStreaming(threadId, false)
-    }
-  },
-
   appendMessage: (message: Message) => {
-    set(state => {
+    set((state) => {
       // Check if message already exists (by id)
-      const exists = state.messages.some(m => m.id === message.id)
+      const exists = state.messages.some((m) => m.id === message.id)
       if (exists) {
-        return { messages: state.messages.map(m => m.id === message.id ? message : m) }
+        return { messages: state.messages.map((m) => (m.id === message.id ? message : m)) }
       }
       return { messages: [...state.messages, message] }
     })
@@ -378,42 +266,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ messages })
   },
 
-  // Streaming actions
-  isThreadStreaming: (threadId: string) => {
-    return get().streamingThreads.has(threadId)
-  },
-  
-  getStreamingContent: (threadId: string) => {
-    return get().streamingContent[threadId] || ''
-  },
-  
-  setThreadStreaming: (threadId: string, streaming: boolean) => {
-    set(state => {
-      const newSet = new Set(state.streamingThreads)
-      if (streaming) {
-        newSet.add(threadId)
-      } else {
-        newSet.delete(threadId)
-      }
-      return { streamingThreads: newSet }
-    })
-  },
-
-  appendStreamingContent: (threadId: string, content: string) => {
-    set(state => ({
-      streamingContent: {
-        ...state.streamingContent,
-        [threadId]: (state.streamingContent[threadId] || '') + content
-      }
-    }))
-  },
-
-  clearStreamingContent: (threadId: string) => {
-    set(state => {
-      const newContent = { ...state.streamingContent }
-      delete newContent[threadId]
-      return { streamingContent: newContent }
-    })
+  // Auto-generate title for first message in a thread
+  generateTitleForFirstMessage: async (threadId: string, content: string) => {
+    try {
+      const generatedTitle = await window.api.threads.generateTitle(content)
+      await get().updateThread(threadId, { title: generatedTitle })
+    } catch (error) {
+      console.error('[Store] Failed to generate title:', error)
+    }
   },
 
   // HITL actions
@@ -421,7 +281,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ pendingApproval: request })
   },
 
-  respondToApproval: async (decision: 'approve' | 'reject' | 'edit', editedArgs?: Record<string, unknown>) => {
+  respondToApproval: async (
+    decision: 'approve' | 'reject' | 'edit',
+    editedArgs?: Record<string, unknown>
+  ) => {
     const { currentThreadId, pendingApproval } = get()
     if (!currentThreadId || !pendingApproval) return
 

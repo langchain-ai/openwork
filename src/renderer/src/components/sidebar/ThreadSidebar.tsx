@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, MessageSquare, Trash2, Settings, Pencil, Loader2 } from 'lucide-react'
+import { Plus, MessageSquare, Trash2, Settings, Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -12,47 +12,46 @@ import {
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
-  ContextMenuTrigger,
+  ContextMenuTrigger
 } from '@/components/ui/context-menu'
 
 // Get version from package.json (injected at build time or via preload)
 const APP_VERSION = '0.1.0'
 
-export function ThreadSidebar() {
-  const { 
-    threads, 
-    currentThreadId, 
-    createThread, 
-    selectThread, 
+export function ThreadSidebar(): React.JSX.Element {
+  const {
+    threads,
+    currentThreadId,
+    createThread,
+    selectThread,
     deleteThread,
     updateThread,
-    settingsOpen, 
-    setSettingsOpen,
-    streamingThreads
+    settingsOpen,
+    setSettingsOpen
   } = useAppStore()
-  
+
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
-  
-  const startEditing = (threadId: string, currentTitle: string) => {
+
+  const startEditing = (threadId: string, currentTitle: string): void => {
     setEditingThreadId(threadId)
     setEditingTitle(currentTitle || '')
   }
-  
-  const saveTitle = async () => {
+
+  const saveTitle = async (): Promise<void> => {
     if (editingThreadId && editingTitle.trim()) {
       await updateThread(editingThreadId, { title: editingTitle.trim() })
     }
     setEditingThreadId(null)
     setEditingTitle('')
   }
-  
-  const cancelEditing = () => {
+
+  const cancelEditing = (): void => {
     setEditingThreadId(null)
     setEditingTitle('')
   }
 
-  const handleNewThread = async () => {
+  const handleNewThread = async (): Promise<void> => {
     await createThread({ title: `Thread ${new Date().toLocaleDateString()}` })
   }
 
@@ -62,9 +61,7 @@ export function ThreadSidebar() {
       <div className="flex items-center justify-between p-4">
         <div className="flex items-center gap-1.5">
           <span className="text-section-header tracking-wider">OPENWORK</span>
-          <span className="text-[10px] text-muted-foreground font-mono">
-            {APP_VERSION}
-          </span>
+          <span className="text-[10px] text-muted-foreground font-mono">{APP_VERSION}</span>
         </div>
         <Button variant="ghost" size="icon-sm" onClick={handleNewThread} title="New thread">
           <Plus className="size-4" />
@@ -81,10 +78,10 @@ export function ThreadSidebar() {
               <ContextMenuTrigger asChild>
                 <div
                   className={cn(
-                    "group flex items-center gap-2 rounded-sm px-3 py-2 cursor-pointer transition-colors overflow-hidden",
+                    'group flex items-center gap-2 rounded-sm px-3 py-2 cursor-pointer transition-colors overflow-hidden',
                     currentThreadId === thread.thread_id
-                      ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                      : "hover:bg-sidebar-accent/50"
+                      ? 'bg-sidebar-accent text-sidebar-accent-fore ground'
+                      : 'hover:bg-sidebar-accent/50'
                   )}
                   onClick={() => {
                     if (editingThreadId !== thread.thread_id) {
@@ -92,11 +89,7 @@ export function ThreadSidebar() {
                     }
                   }}
                 >
-                  {streamingThreads.has(thread.thread_id) ? (
-                    <Loader2 className="size-4 shrink-0 text-status-info animate-spin" />
-                  ) : (
-                    <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
-                  )}
+                  <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
                   <div className="flex-1 min-w-0 overflow-hidden">
                     {editingThreadId === thread.thread_id ? (
                       <input
@@ -137,14 +130,12 @@ export function ThreadSidebar() {
                 </div>
               </ContextMenuTrigger>
               <ContextMenuContent>
-                <ContextMenuItem 
-                  onClick={() => startEditing(thread.thread_id, thread.title || '')}
-                >
+                <ContextMenuItem onClick={() => startEditing(thread.thread_id, thread.title || '')}>
                   <Pencil className="size-4 mr-2" />
                   Rename
                 </ContextMenuItem>
                 <ContextMenuSeparator />
-                <ContextMenuItem 
+                <ContextMenuItem
                   variant="destructive"
                   onClick={() => deleteThread(thread.thread_id)}
                 >
@@ -168,10 +159,10 @@ export function ThreadSidebar() {
       {/* Model Selector */}
       <div className="p-4 space-y-4">
         <ModelSelector />
-        
-        <Button 
-          variant="ghost" 
-          size="sm" 
+
+        <Button
+          variant="ghost"
+          size="sm"
           className="w-full justify-start gap-2"
           onClick={() => setSettingsOpen(true)}
         >

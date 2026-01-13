@@ -28,6 +28,7 @@
     "@langchain/core": "^1.1.12",
     "@langchain/langgraph": "^1.0.15",
     "@langchain/langgraph-checkpoint": "^1.0.0",
+    "@langchain/langgraph-sdk": "^1.5.3",
     "@langchain/openai": "^1.2.1",
     "@radix-ui/react-context-menu": "^2.2.16",
     "@radix-ui/react-dialog": "^1.1.15",
@@ -77,5 +78,6 @@
     "tailwindcss": "^4.0.0",
     "typescript": "^5.9.3",
     "vite": "^7.2.6"
-  }
+  },
+  "packageManager": "pnpm@10.28.0+sha512.05df71d1421f21399e053fde567cea34d446fa02c76571441bfc1c7956e98e363088982d940465fd34480d4d90a0668bc12362f8aa88000a64e83d0b0e47be48"
 }

@@ -16,6 +16,12 @@ interface ElectronAPI {
 interface CustomAPI {
   agent: {
     invoke: (threadId: string, message: string, onEvent: (event: StreamEvent) => void) => () => void
+    streamAgent: (
+      threadId: string,
+      message: string,
+      command: unknown,
+      onEvent: (event: StreamEvent) => void
+    ) => () => void
     interrupt: (threadId: string, decision: HITLDecision) => Promise<void>
     cancel: (threadId: string) => Promise<void>
   }

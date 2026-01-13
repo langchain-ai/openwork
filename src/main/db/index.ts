@@ -4,7 +4,7 @@ import { dirname, join } from 'path'
 import { app } from 'electron'
 
 // Database path in user data directory
-const getDbPath = () => join(app.getPath('userData'), 'openwork.sqlite')
+const getDbPath = (): string => join(app.getPath('userData'), 'openwork.sqlite')
 
 let db: SqlJsDatabase | null = null
 let saveTimer: ReturnType<typeof setTimeout> | null = null
@@ -176,10 +176,7 @@ export function getThread(threadId: string): Thread | null {
   return thread
 }
 
-export function createThread(
-  threadId: string,
-  metadata?: Record<string, unknown>
-): Thread {
+export function createThread(threadId: string, metadata?: Record<string, unknown>): Thread {
   const database = getDb()
   const now = Date.now()
 
@@ -217,7 +214,9 @@ export function updateThread(
 
   if (updates.metadata !== undefined) {
     setClauses.push('metadata = ?')
-    values.push(typeof updates.metadata === 'string' ? updates.metadata : JSON.stringify(updates.metadata))
+    values.push(
+      typeof updates.metadata === 'string' ? updates.metadata : JSON.stringify(updates.metadata)
+    )
   }
   if (updates.status !== undefined) {
     setClauses.push('status = ?')
@@ -234,10 +233,7 @@ export function updateThread(
 
   values.push(threadId)
 
-  database.run(
-    `UPDATE threads SET ${setClauses.join(', ')} WHERE thread_id = ?`,
-    values
-  )
+  database.run(`UPDATE threads SET ${setClauses.join(', ')} WHERE thread_id = ?`, values)
 
   saveToDisk()
 

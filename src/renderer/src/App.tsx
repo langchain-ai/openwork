@@ -4,18 +4,21 @@ import { ChatContainer } from '@/components/chat/ChatContainer'
 import { RightPanel } from '@/components/panels/RightPanel'
 import { useAppStore } from '@/lib/store'
 
-function App() {
+function App(): React.JSX.Element {
   const { currentThreadId, loadThreads, createThread, setSettingsOpen } = useAppStore()
   const [isLoading, setIsLoading] = useState(true)
 
   // Keyboard shortcuts
-  const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    // Cmd+, for settings
-    if ((e.metaKey || e.ctrlKey) && e.key === ',') {
-      e.preventDefault()
-      setSettingsOpen(true)
-    }
-  }, [setSettingsOpen])
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      // Cmd+, for settings
+      if ((e.metaKey || e.ctrlKey) && e.key === ',') {
+        e.preventDefault()
+        setSettingsOpen(true)
+      }
+    },
+    [setSettingsOpen]
+  )
 
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown)
@@ -23,7 +26,7 @@ function App() {
   }, [handleKeyDown])
 
   useEffect(() => {
-    async function init() {
+    async function init(): Promise<void> {
       try {
         await loadThreads()
         // Create a default thread if none exist
@@ -52,7 +55,7 @@ function App() {
     <div className="flex flex-col h-screen overflow-hidden bg-background">
       {/* Draggable titlebar region */}
       <div className="h-8 w-full shrink-0 app-drag-region bg-sidebar" />
-      
+
       {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
         {/* Left Sidebar - Thread List */}
