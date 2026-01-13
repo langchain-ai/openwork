@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { ListTodo, FolderTree, GitBranch, ChevronRight, CheckCircle2, Circle, Clock, XCircle, GripHorizontal } from 'lucide-react'
+import { ListTodo, FolderTree, GitBranch, ChevronRight, ChevronDown, CheckCircle2, Circle, Clock, XCircle, GripHorizontal } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useAppStore } from '@/lib/store'
 import { Badge } from '@/components/ui/badge'
@@ -329,6 +329,7 @@ const STATUS_CONFIG = {
 
 function TasksContent() {
   const { todos } = useAppStore()
+  const [completedExpanded, setCompletedExpanded] = useState(false)
   
   if (todos.length === 0) {
     return (
@@ -344,7 +345,9 @@ function TasksContent() {
   const pending = todos.filter(t => t.status === 'pending')
   const completed = todos.filter(t => t.status === 'completed')
   const cancelled = todos.filter(t => t.status === 'cancelled')
-  const allTodos = [...inProgress, ...pending, ...completed, ...cancelled]
+  
+  // Completed section includes both completed and cancelled
+  const doneItems = [...completed, ...cancelled]
   
   const done = completed.length
   const total = todos.length
@@ -368,7 +371,39 @@ function TasksContent() {
       
       {/* Todo list */}
       <div className="p-3 space-y-2">
-        {allTodos.map(todo => (
+        {/* Completed/Cancelled Section (Collapsible) */}
+        {doneItems.length > 0 && (
+          <div className="mb-1">
+            <button
+              onClick={() => setCompletedExpanded(!completedExpanded)}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2 w-full"
+            >
+              {completedExpanded ? (
+                <ChevronDown className="size-3.5" />
+              ) : (
+                <ChevronRight className="size-3.5" />
+              )}
+              <span className="uppercase tracking-wider font-medium">
+                Completed ({doneItems.length})
+              </span>
+            </button>
+            {completedExpanded && (
+              <div className="space-y-2 pl-5 mb-3">
+                {doneItems.map((todo) => (
+                  <TaskItem key={todo.id} todo={todo} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* In Progress Section */}
+        {inProgress.map(todo => (
+          <TaskItem key={todo.id} todo={todo} />
+        ))}
+
+        {/* Pending Section */}
+        {pending.map(todo => (
           <TaskItem key={todo.id} todo={todo} />
         ))}
       </div>

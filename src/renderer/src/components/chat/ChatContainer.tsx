@@ -127,12 +127,12 @@ export function ChatContainer({ threadId }: ChatContainerProps) {
               rows={1}
               style={{ minHeight: '48px', maxHeight: '200px' }}
             />
-            <div className="flex items-center shrink-0 pb-2">
+            <div className="flex items-center justify-center shrink-0 h-12">
               {isStreaming ? (
                 <Button
                   type="button"
                   variant="ghost"
-                  size="icon-sm"
+                  size="icon"
                   onClick={handleCancel}
                 >
                   <Square className="size-4" />
@@ -141,7 +141,7 @@ export function ChatContainer({ threadId }: ChatContainerProps) {
                 <Button
                   type="submit"
                   variant="default"
-                  size="icon-sm"
+                  size="icon"
                   disabled={!input.trim()}
                 >
                   <Send className="size-4" />

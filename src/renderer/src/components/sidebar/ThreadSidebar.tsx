@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, MessageSquare, Trash2, Settings, Pencil } from 'lucide-react'
+import { Plus, MessageSquare, Trash2, Settings, Pencil, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
@@ -27,7 +27,8 @@ export function ThreadSidebar() {
     deleteThread,
     updateThread,
     settingsOpen, 
-    setSettingsOpen
+    setSettingsOpen,
+    streamingThreads
   } = useAppStore()
   
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null)
@@ -91,7 +92,11 @@ export function ThreadSidebar() {
                     }
                   }}
                 >
-                  <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
+                  {streamingThreads.has(thread.thread_id) ? (
+                    <Loader2 className="size-4 shrink-0 text-status-info animate-spin" />
+                  ) : (
+                    <MessageSquare className="size-4 shrink-0 text-muted-foreground" />
+                  )}
                   <div className="flex-1 min-w-0 overflow-hidden">
                     {editingThreadId === thread.thread_id ? (
                       <input

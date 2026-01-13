@@ -1,4 +1,5 @@
-import { CheckCircle2, Circle, Clock, XCircle } from 'lucide-react'
+import { useState } from 'react'
+import { CheckCircle2, Circle, Clock, XCircle, ChevronRight, ChevronDown } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Badge } from '@/components/ui/badge'
 import { useAppStore } from '@/lib/store'
@@ -34,6 +35,7 @@ const STATUS_CONFIG = {
 
 export function TodoPanel() {
   const { todos } = useAppStore()
+  const [completedExpanded, setCompletedExpanded] = useState(false)
 
   // Group todos by status
   const inProgress = todos.filter(t => t.status === 'in_progress')
@@ -41,12 +43,15 @@ export function TodoPanel() {
   const completed = todos.filter(t => t.status === 'completed')
   const cancelled = todos.filter(t => t.status === 'cancelled')
 
-  const allTodos = [...inProgress, ...pending, ...completed, ...cancelled]
+  // Completed section includes both completed and cancelled
+  const doneItems = [...completed, ...cancelled]
 
   // Calculate progress
   const total = todos.length
   const done = completed.length
   const progress = total > 0 ? Math.round((done / total) * 100) : 0
+
+  const hasAnyTodos = todos.length > 0
 
   return (
     <div className="flex flex-col h-full">
@@ -67,14 +72,56 @@ export function TodoPanel() {
       {/* Todo List */}
       <ScrollArea className="flex-1 min-h-0">
         <div className="p-4 space-y-2">
-          {allTodos.length === 0 ? (
+          {!hasAnyTodos ? (
             <div className="text-center text-sm text-muted-foreground py-8">
               No tasks yet
             </div>
           ) : (
-            allTodos.map((todo) => (
-              <TodoItem key={todo.id} todo={todo} />
-            ))
+            <>
+              {/* Completed/Cancelled Section (Collapsible) */}
+              {doneItems.length > 0 && (
+                <div className="mb-3">
+                  <button
+                    onClick={() => setCompletedExpanded(!completedExpanded)}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors mb-2 w-full"
+                  >
+                    {completedExpanded ? (
+                      <ChevronDown className="size-3.5" />
+                    ) : (
+                      <ChevronRight className="size-3.5" />
+                    )}
+                    <span className="uppercase tracking-wider font-medium">
+                      Completed ({doneItems.length})
+                    </span>
+                  </button>
+                  {completedExpanded && (
+                    <div className="space-y-2 pl-5">
+                      {doneItems.map((todo) => (
+                        <TodoItem key={todo.id} todo={todo} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* In Progress Section */}
+              {inProgress.length > 0 && (
+                <div className="space-y-2">
+                  {inProgress.map((todo) => (
+                    <TodoItem key={todo.id} todo={todo} />
+                  ))}
+                </div>
+              )}
+
+              {/* Pending Section */}
+              {pending.length > 0 && (
+                <div className="space-y-2">
+                  {pending.map((todo) => (
+                    <TodoItem key={todo.id} todo={todo} />
+                  ))}
+                </div>
+              )}
+            </>
           )}
         </div>
       </ScrollArea>
