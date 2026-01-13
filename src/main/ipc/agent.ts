@@ -42,7 +42,8 @@ export function registerAgentHandlers(ipcMain: IpcMain) {
         { 
           configurable: { thread_id: threadId },
           signal: abortController.signal,
-          streamMode: 'values'
+          streamMode: 'values',
+          recursionLimit: 1000 // Match Python deepagents behavior
         }
       )
       console.log('[Agent] Stream started with streamMode: values')
