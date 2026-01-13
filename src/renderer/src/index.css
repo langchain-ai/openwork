@@ -1,0 +1,356 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  /* Radius scale */
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 1px);
+  --radius-xl: calc(var(--radius) + 2px);
+  --radius-2xl: calc(var(--radius) + 4px);
+
+  /* Foundation colors */
+  --color-background: var(--background);
+  --color-background-elevated: var(--background-elevated);
+  --color-background-interactive: var(--background-interactive);
+  --color-foreground: var(--foreground);
+
+  /* Component colors */
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+
+  /* Border colors */
+  --color-border: var(--border);
+  --color-border-emphasis: var(--border-emphasis);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Status colors */
+  --color-status-critical: var(--status-critical);
+  --color-status-warning: var(--status-warning);
+  --color-status-nominal: var(--status-nominal);
+  --color-status-info: var(--status-info);
+
+  /* Chart colors - using status palette */
+  --color-chart-1: var(--status-critical);
+  --color-chart-2: var(--status-warning);
+  --color-chart-3: var(--status-nominal);
+  --color-chart-4: var(--status-info);
+  --color-chart-5: var(--accent);
+
+  /* Sidebar colors */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  /* Foundation */
+  --radius: 3px;
+  --background: #0D0D0F;
+  --background-elevated: #141418;
+  --background-interactive: #1C1C22;
+  --foreground: #E8E8EC;
+
+  /* Borders */
+  --border: #2A2A32;
+  --border-emphasis: #3A3A45;
+  --input: #2A2A32;
+  --ring: #3B82F6;
+
+  /* Text hierarchy */
+  --muted: #141418;
+  --muted-foreground: #8A8A96;
+  --tertiary-foreground: #5A5A66;
+
+  /* Semantic mapping for shadcn compatibility */
+  --card: #141418;
+  --card-foreground: #E8E8EC;
+  --popover: #141418;
+  --popover-foreground: #E8E8EC;
+  --primary: #3B82F6;
+  --primary-foreground: #E8E8EC;
+  --secondary: #1C1C22;
+  --secondary-foreground: #E8E8EC;
+  --accent: #FB923C;
+  --accent-foreground: #0D0D0F;
+  --destructive: #E53E3E;
+
+  /* Status colors */
+  --status-critical: #E53E3E;
+  --status-warning: #F59E0B;
+  --status-nominal: #22C55E;
+  --status-info: #3B82F6;
+
+  /* Sidebar */
+  --sidebar: #141418;
+  --sidebar-foreground: #E8E8EC;
+  --sidebar-primary: #3B82F6;
+  --sidebar-primary-foreground: #E8E8EC;
+  --sidebar-accent: #1C1C22;
+  --sidebar-accent-foreground: #E8E8EC;
+  --sidebar-border: #2A2A32;
+  --sidebar-ring: #3B82F6;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'JetBrains Mono', 'Fira Code', 'SF Mono', ui-monospace, monospace;
+  }
+}
+
+/* Tactical typography utilities */
+.text-section-header {
+  @apply text-[11px] font-semibold uppercase tracking-[0.1em] text-muted-foreground;
+}
+
+.text-data {
+  @apply font-mono tabular-nums;
+}
+
+.text-hero-metric {
+  @apply text-5xl font-light tracking-tight tabular-nums;
+}
+
+/* Status color utilities */
+.text-critical {
+  color: var(--status-critical);
+}
+.text-warning {
+  color: var(--status-warning);
+}
+.text-nominal {
+  color: var(--status-nominal);
+}
+.text-info {
+  color: var(--status-info);
+}
+
+.bg-critical {
+  background-color: var(--status-critical);
+}
+.bg-warning {
+  background-color: var(--status-warning);
+}
+.bg-nominal {
+  background-color: var(--status-nominal);
+}
+.bg-info {
+  background-color: var(--status-info);
+}
+
+.bg-critical\/15 {
+  background-color: color-mix(in srgb, var(--status-critical) 15%, transparent);
+}
+.bg-warning\/15 {
+  background-color: color-mix(in srgb, var(--status-warning) 15%, transparent);
+}
+.bg-nominal\/15 {
+  background-color: color-mix(in srgb, var(--status-nominal) 15%, transparent);
+}
+.bg-info\/15 {
+  background-color: color-mix(in srgb, var(--status-info) 15%, transparent);
+}
+
+.border-critical {
+  border-color: var(--status-critical);
+}
+.border-warning {
+  border-color: var(--status-warning);
+}
+.border-nominal {
+  border-color: var(--status-nominal);
+}
+.border-info {
+  border-color: var(--status-info);
+}
+
+/* Pulse animation for live indicators */
+@keyframes tactical-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-tactical-pulse {
+  animation: tactical-pulse 2s ease-in-out infinite;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-emphasis);
+}
+
+/* Hide scrollbar but allow scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Streaming markdown styles */
+.streaming-markdown {
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.streaming-markdown p {
+  margin-bottom: 0.75em;
+}
+
+.streaming-markdown p:last-child {
+  margin-bottom: 0;
+}
+
+.streaming-markdown h1,
+.streaming-markdown h2,
+.streaming-markdown h3,
+.streaming-markdown h4,
+.streaming-markdown h5,
+.streaming-markdown h6 {
+  font-weight: 600;
+  margin-top: 1em;
+  margin-bottom: 0.5em;
+}
+
+.streaming-markdown h1 { font-size: 1.5em; }
+.streaming-markdown h2 { font-size: 1.25em; }
+.streaming-markdown h3 { font-size: 1.125em; }
+.streaming-markdown h4,
+.streaming-markdown h5,
+.streaming-markdown h6 { font-size: 1em; }
+
+.streaming-markdown ul,
+.streaming-markdown ol {
+  margin-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.streaming-markdown ul {
+  list-style-type: disc;
+}
+
+.streaming-markdown ol {
+  list-style-type: decimal;
+}
+
+.streaming-markdown li {
+  margin-bottom: 0.25em;
+}
+
+.streaming-markdown code {
+  background-color: var(--background);
+  padding: 0.125em 0.25em;
+  border-radius: 3px;
+  font-size: 0.875em;
+}
+
+.streaming-markdown pre {
+  background-color: var(--background);
+  padding: 0.75em 1em;
+  border-radius: 3px;
+  overflow-x: auto;
+  margin-bottom: 0.75em;
+}
+
+.streaming-markdown pre code {
+  background-color: transparent;
+  padding: 0;
+}
+
+.streaming-markdown blockquote {
+  border-left: 3px solid var(--border-emphasis);
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 0.75em;
+  color: var(--muted-foreground);
+}
+
+.streaming-markdown a {
+  color: var(--primary);
+  text-decoration: underline;
+}
+
+.streaming-markdown a:hover {
+  opacity: 0.8;
+}
+
+.streaming-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.75em;
+}
+
+.streaming-markdown th,
+.streaming-markdown td {
+  border: 1px solid var(--border);
+  padding: 0.5em;
+  text-align: left;
+}
+
+.streaming-markdown th {
+  background-color: var(--background);
+  font-weight: 600;
+}
+
+.streaming-markdown hr {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 1em 0;
+}
+
+.streaming-markdown img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Window drag region for frameless window */
+.app-drag-region {
+  -webkit-app-region: drag;
+}
+.app-drag-region button,
+.app-drag-region input,
+.app-drag-region select,
+.app-drag-region a {
+  -webkit-app-region: no-drag;
+}
