@@ -16,7 +16,8 @@ const store = new Store({
 const PROVIDERS: Omit<Provider, 'hasApiKey'>[] = [
   { id: 'anthropic', name: 'Anthropic' },
   { id: 'openai', name: 'OpenAI' },
-  { id: 'google', name: 'Google' }
+  { id: 'google', name: 'Google' },
+  { id: 'zhipu', name: 'ZhipuAI' }
 ]
 
 // Available models configuration (updated Jan 2026)
@@ -185,6 +186,47 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     provider: 'google',
     model: 'gemini-2.5-flash-lite',
     description: 'Fast, low-cost, high-performance model',
+    available: true
+  },
+  // ZhipuAI GLM models
+  {
+    id: 'glm-4.7',
+    name: 'GLM-4.7',
+    provider: 'zhipu',
+    model: 'glm-4.7',
+    description: 'Z.ai flagship reasoning model',
+    available: true
+  },
+  {
+    id: 'glm-4.6v',
+    name: 'GLM-4.6V',
+    provider: 'zhipu',
+    model: 'glm-4.6v',
+    description: 'Multimodal model with 128k context and visual understanding',
+    available: true
+  },
+  {
+    id: 'glm-4.5-air',
+    name: 'GLM-4.5-Air',
+    provider: 'zhipu',
+    model: 'glm-4.5-air',
+    description: 'Lightweight flagship with strong reasoning at lower cost',
+    available: true
+  },
+  {
+    id: 'glm-4.5-flash',
+    name: 'GLM-4.5-Flash',
+    provider: 'zhipu',
+    model: 'glm-4.5-flash',
+    description: 'Fast, low-latency free tier model',
+    available: true
+  },
+  {
+    id: 'glm-4-32b-0414-128k',
+    name: 'GLM-4-32B-0414-128K',
+    provider: 'zhipu',
+    model: 'glm-4-32b-0414-128k',
+    description: 'Cost-efficient 32B language model (128K context)',
     available: true
   }
 ]

@@ -32,10 +32,19 @@ function GoogleIcon({ className }: { className?: string }) {
   )
 }
 
+function ZhipuIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M4 4h16v3H10l10 13v3H4v-3h10L4 7z"/>
+    </svg>
+  )
+}
+
 const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
   anthropic: AnthropicIcon,
   openai: OpenAIIcon,
   google: GoogleIcon,
+  zhipu: ZhipuIcon,
   ollama: () => null // No icon for ollama yet
 }
 
@@ -43,7 +52,8 @@ const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
 const FALLBACK_PROVIDERS: Provider[] = [
   { id: 'anthropic', name: 'Anthropic', hasApiKey: false },
   { id: 'openai', name: 'OpenAI', hasApiKey: false },
-  { id: 'google', name: 'Google', hasApiKey: false }
+  { id: 'google', name: 'Google', hasApiKey: false },
+  { id: 'zhipu', name: 'ZhipuAI', hasApiKey: false }
 ]
 
 export function ModelSwitcher() {

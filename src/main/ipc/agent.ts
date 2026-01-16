@@ -68,7 +68,7 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
         // Stream with both modes:
         // - 'messages' for real-time token streaming
         // - 'values' for full state (todos, files, etc.)
-        const stream = await agent.stream(
+        const stream = await (agent as any).stream(
           { messages: [humanMessage] },
           {
             configurable: { thread_id: threadId },
@@ -164,7 +164,7 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
         // The HITL middleware expects { decisions: [{ type: 'approve' | 'reject' | 'edit' }] }
         const decisionType = command?.resume?.decision || 'approve'
         const resumeValue = { decisions: [{ type: decisionType }] }
-        const stream = await agent.stream(new Command({ resume: resumeValue }), config)
+        const stream = await (agent as any).stream(new Command({ resume: resumeValue }), config)
 
         for await (const chunk of stream) {
           if (abortController.signal.aborted) break
@@ -236,7 +236,7 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
 
         if (decision.type === 'approve') {
           // Resume execution by invoking with null (continues from checkpoint)
-          const stream = await agent.stream(null, config)
+          const stream = await (agent as any).stream(null, config)
 
           for await (const chunk of stream) {
             if (abortController.signal.aborted) break
