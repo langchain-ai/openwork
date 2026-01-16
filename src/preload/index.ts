@@ -146,6 +146,15 @@ const api = {
     },
     deleteApiKey: (provider: string): Promise<void> => {
       return ipcRenderer.invoke('models:deleteApiKey', provider)
+    },
+    getAzureConfig: (): Promise<{ endpoint: string; deployment: string; apiVersion: string } | null> => {
+      return ipcRenderer.invoke('models:getAzureConfig')
+    },
+    setAzureConfig: (config: { endpoint: string; deployment: string; apiVersion: string }): Promise<void> => {
+      return ipcRenderer.invoke('models:setAzureConfig', config)
+    },
+    setAzureEndpoint: (endpointOrUri: string): Promise<{ endpoint: string; apiVersion?: string } | null> => {
+      return ipcRenderer.invoke('models:setAzureEndpoint', endpointOrUri)
     }
   },
   workspace: {

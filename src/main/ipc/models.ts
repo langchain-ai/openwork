@@ -4,7 +4,7 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import type { ModelConfig, Provider } from '../types'
 import { startWatching, stopWatching } from '../services/workspace-watcher'
-import { getOpenworkDir, getApiKey, setApiKey, deleteApiKey, hasApiKey } from '../storage'
+import { getOpenworkDir, getApiKey, setApiKey, deleteApiKey, getAzureConfig, setAzureConfig, setAzureEndpoint, isProviderConfigured } from '../storage'
 
 // Store for non-sensitive settings only (no encryption needed)
 const store = new Store({
@@ -16,7 +16,8 @@ const store = new Store({
 const PROVIDERS: Omit<Provider, 'hasApiKey'>[] = [
   { id: 'anthropic', name: 'Anthropic' },
   { id: 'openai', name: 'OpenAI' },
-  { id: 'google', name: 'Google' }
+  { id: 'google', name: 'Google' },
+  { id: 'azure', name: 'Azure OpenAI' }
 ]
 
 // Available models configuration (updated Jan 2026)
@@ -186,6 +187,14 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     model: 'gemini-2.5-flash-lite',
     description: 'Fast, low-cost, high-performance model',
     available: true
+  },
+  {
+    id: 'azure-deployment',
+    name: 'Azure (configured deployment)',
+    provider: 'azure',
+    model: 'azure-deployment',
+    description: 'Use your configured Azure OpenAI deployment',
+    available: true
   }
 ]
 
@@ -195,7 +204,7 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     // Check which models have API keys configured
     return AVAILABLE_MODELS.map((model) => ({
       ...model,
-      available: hasApiKey(model.provider)
+      available: isProviderConfigured(model.provider)
     }))
   })
 
@@ -231,8 +240,23 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
   ipcMain.handle('models:listProviders', async () => {
     return PROVIDERS.map((provider) => ({
       ...provider,
-      hasApiKey: hasApiKey(provider.id)
+      hasApiKey: isProviderConfigured(provider.id)
     }))
+  })
+
+  // Get Azure OpenAI configuration
+  ipcMain.handle('models:getAzureConfig', async () => {
+    return getAzureConfig()
+  })
+
+  // Set Azure OpenAI configuration
+  ipcMain.handle('models:setAzureConfig', async (_event, config: { endpoint: string; deployment: string; apiVersion: string }) => {
+    setAzureConfig(config)
+  })
+
+  // Set Azure endpoint (accepts base endpoint or Target URI)
+  ipcMain.handle('models:setAzureEndpoint', async (_event, endpointOrUri: string) => {
+    return setAzureEndpoint(endpointOrUri)
   })
 
   // Sync version info
@@ -508,4 +532,8 @@ export { getApiKey } from '../storage'
 
 export function getDefaultModel(): string {
   return store.get('defaultModel', 'claude-sonnet-4-5-20250929') as string
+}
+
+export function getModelConfigById(modelId: string): ModelConfig | undefined {
+  return AVAILABLE_MODELS.find((m) => m.id === modelId)
 }

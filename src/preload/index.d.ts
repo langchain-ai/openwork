@@ -46,6 +46,9 @@ interface CustomAPI {
     setDefault: (modelId: string) => Promise<void>
     setApiKey: (provider: string, apiKey: string) => Promise<void>
     getApiKey: (provider: string) => Promise<string | null>
+    getAzureConfig: () => Promise<{ endpoint: string; deployment: string; apiVersion: string } | null>
+    setAzureConfig: (config: { endpoint: string; deployment: string; apiVersion: string }) => Promise<void>
+    setAzureEndpoint: (endpointOrUri: string) => Promise<{ endpoint: string; apiVersion?: string } | null>
   }
   workspace: {
     get: (threadId?: string) => Promise<string | null>

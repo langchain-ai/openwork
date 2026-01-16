@@ -21,7 +21,8 @@ interface ApiKeyDialogProps {
 const PROVIDER_INFO: Record<string, { placeholder: string; envVar: string }> = {
   anthropic: { placeholder: 'sk-ant-...', envVar: 'ANTHROPIC_API_KEY' },
   openai: { placeholder: 'sk-...', envVar: 'OPENAI_API_KEY' },
-  google: { placeholder: 'AIza...', envVar: 'GOOGLE_API_KEY' }
+  google: { placeholder: 'AIza...', envVar: 'GOOGLE_API_KEY' },
+  azure: { placeholder: 'Azure key', envVar: 'AZURE_OPENAI_API_KEY' }
 }
 
 export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps) {
@@ -30,16 +31,55 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [hasExistingKey, setHasExistingKey] = useState(false)
-  
-  const { setApiKey: saveApiKey, deleteApiKey } = useAppStore()
+
+  const [azureConfig, setAzureConfig] = useState<{
+    endpointOrTargetUri: string
+    deployment: string
+    apiVersion: string
+  }>({ endpointOrTargetUri: '', deployment: '', apiVersion: '' })
+
+  const {
+    getApiKey,
+    setApiKey: saveApiKey,
+    deleteApiKey,
+    getAzureConfig,
+    setAzureConfig: saveAzureConfig,
+    setAzureEndpoint
+  } = useAppStore()
 
   // Check if there's an existing key when dialog opens
   useEffect(() => {
-    if (open && provider) {
-      setHasExistingKey(provider.hasApiKey)
+    async function load(): Promise<void> {
+      if (!open || !provider) return
+
       setApiKey('')
       setShowKey(false)
+
+      if (provider.id !== 'azure') {
+        setHasExistingKey(provider.hasApiKey)
+        return
+      }
+
+      try {
+        const [key, config] = await Promise.all([
+          getApiKey('azure'),
+          getAzureConfig()
+        ])
+
+        setHasExistingKey(!!key)
+        setAzureConfig({
+          endpointOrTargetUri: config?.endpoint ?? '',
+          deployment: config?.deployment ?? '',
+          apiVersion: config?.apiVersion ?? ''
+        })
+      } catch (e) {
+        console.error('[ApiKeyDialog] Failed to load Azure config:', e)
+        setHasExistingKey(false)
+        setAzureConfig({ endpointOrTargetUri: '', deployment: '', apiVersion: '' })
+      }
     }
+
+    load()
   }, [open, provider])
 
   if (!provider) return null
@@ -47,14 +87,44 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
   const info = PROVIDER_INFO[provider.id] || { placeholder: '...', envVar: '' }
 
   async function handleSave() {
-    if (!apiKey.trim()) return
     if (!provider) return
     
     console.log('[ApiKeyDialog] Saving API key for provider:', provider.id)
     setSaving(true)
     try {
+      if (provider.id === 'azure') {
+        const keyToSave = apiKey.trim()
+
+        if (keyToSave) {
+          await saveApiKey('azure', keyToSave)
+        } else if (!hasExistingKey) {
+          return
+        }
+
+        if (!azureConfig.endpointOrTargetUri.trim() || !azureConfig.deployment.trim()) {
+          return
+        }
+
+        const endpointResult = await setAzureEndpoint(azureConfig.endpointOrTargetUri)
+        const apiVersion = azureConfig.apiVersion.trim() || endpointResult?.apiVersion || ''
+        const endpoint = endpointResult?.endpoint || azureConfig.endpointOrTargetUri.trim()
+
+        if (!apiVersion) {
+          return
+        }
+
+        await saveAzureConfig({
+          endpoint,
+          deployment: azureConfig.deployment.trim(),
+          apiVersion
+        })
+
+        onOpenChange(false)
+        return
+      }
+
+      if (!apiKey.trim()) return
       await saveApiKey(provider.id, apiKey.trim())
-      console.log('[ApiKeyDialog] API key saved successfully')
       onOpenChange(false)
     } catch (e) {
       console.error('[ApiKeyDialog] Failed to save API key:', e)
@@ -85,8 +155,10 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
           </DialogTitle>
           <DialogDescription>
             {hasExistingKey 
-              ? 'Enter a new API key to replace the existing one, or remove it.'
-              : `Enter your ${provider.name} API key to use their models.`
+              ? 'For security, saved keys cannot be displayed. Enter a new key to replace the existing one, or remove it.'
+              : provider.id === 'azure'
+                ? 'Enter your Azure OpenAI API key and deployment configuration.'
+                : `Enter your ${provider.name} API key to use their models.`
             }
           </DialogDescription>
         </DialogHeader>
@@ -102,18 +174,66 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
                 className="pr-10"
                 autoFocus
               />
-              <button
-                type="button"
-                onClick={() => setShowKey(!showKey)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-              </button>
+              {apiKey.trim() ? (
+                <button
+                  type="button"
+                  onClick={() => setShowKey(!showKey)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {showKey ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              ) : (
+                <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
+                  {showKey ? <EyeOff className="size-4 opacity-40" /> : <Eye className="size-4 opacity-40" />}
+                </span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
               Environment variable: <code className="text-foreground">{info.envVar}</code>
             </p>
           </div>
+
+          {provider.id === 'azure' && (
+            <div className="space-y-3">
+              <div className="space-y-2">
+                <Input
+                  type="text"
+                  value={azureConfig.endpointOrTargetUri}
+                  onChange={(e) =>
+                    setAzureConfig((prev) => ({ ...prev, endpointOrTargetUri: e.target.value }))
+                  }
+                  placeholder="Azure OpenAI endpoint or deployment Target URI"
+                  className="font-mono text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Paste your base endpoint (e.g. https://&lt;your-resource-name&gt;.openai.azure.com) or the full deployment Target URI from Azure.
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <Input
+                  type="text"
+                  value={azureConfig.deployment}
+                  onChange={(e) => setAzureConfig((prev) => ({ ...prev, deployment: e.target.value }))}
+                  placeholder="Deployment name (e.g. gpt-4.1)"
+                  className="font-mono text-xs"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Input
+                  type="text"
+                  value={azureConfig.apiVersion}
+                  onChange={(e) => setAzureConfig((prev) => ({ ...prev, apiVersion: e.target.value }))}
+                  placeholder="API version (e.g. 2024-05-01-preview)"
+                  className="font-mono text-xs"
+                />
+                <p className="text-xs text-muted-foreground">
+                  If you paste a full Target URI above, api-version can be extracted automatically.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex justify-between">
@@ -142,7 +262,15 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
             <Button
               type="button"
               onClick={handleSave}
-              disabled={!apiKey.trim() || saving}
+              disabled={
+                saving ||
+                (provider.id === 'azure'
+                  ? (!apiKey.trim() && !hasExistingKey) ||
+                    !azureConfig.endpointOrTargetUri.trim() ||
+                    !azureConfig.deployment.trim() ||
+                    (!azureConfig.apiVersion.trim() && !azureConfig.endpointOrTargetUri.includes('api-version'))
+                  : !apiKey.trim())
+              }
             >
               {saving ? (
                 <Loader2 className="size-4 animate-spin" />

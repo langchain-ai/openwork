@@ -24,7 +24,7 @@ export interface Run {
 }
 
 // Provider configuration
-export type ProviderId = 'anthropic' | 'openai' | 'google' | 'ollama'
+export type ProviderId = 'anthropic' | 'openai' | 'google' | 'ollama' | 'azure'
 
 export interface Provider {
   id: ProviderId

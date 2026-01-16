@@ -32,10 +32,19 @@ function GoogleIcon({ className }: { className?: string }) {
   )
 }
 
+function AzureIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M11.4 24H0V12.6h11.4V24zM24 24H12.6V12.6H24V24zM11.4 11.4H0V0h11.4v11.4zM24 11.4H12.6V0H24v11.4z"/>
+    </svg>
+  )
+}
+
 const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
   anthropic: AnthropicIcon,
   openai: OpenAIIcon,
   google: GoogleIcon,
+  azure: AzureIcon,
   ollama: () => null // No icon for ollama yet
 }
 
@@ -43,7 +52,8 @@ const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
 const FALLBACK_PROVIDERS: Provider[] = [
   { id: 'anthropic', name: 'Anthropic', hasApiKey: false },
   { id: 'openai', name: 'OpenAI', hasApiKey: false },
-  { id: 'google', name: 'Google', hasApiKey: false }
+  { id: 'google', name: 'Google', hasApiKey: false },
+  { id: 'azure', name: 'Azure OpenAI', hasApiKey: false }
 ]
 
 export function ModelSwitcher() {
@@ -58,7 +68,7 @@ export function ModelSwitcher() {
     currentModel, 
     loadModels, 
     loadProviders,
-    setCurrentModel 
+    setCurrentModel
   } = useAppStore()
 
   // Load models and providers on mount
@@ -125,7 +135,7 @@ export function ModelSwitcher() {
             {selectedModel ? (
               <>
                 {PROVIDER_ICONS[selectedModel.provider]?.({ className: 'size-3.5' })}
-                <span className="font-mono">{selectedModel.id}</span>
+                <span className="font-mono">{selectedModel.name ?? selectedModel.id}</span>
               </>
             ) : (
               <span>Select model</span>
@@ -180,13 +190,15 @@ export function ModelSwitcher() {
                 <div className="flex flex-col items-center justify-center h-[180px] px-4 text-center">
                   <Key className="size-6 text-muted-foreground mb-2" />
                   <p className="text-xs text-muted-foreground mb-3">
-                    API key required for {selectedProvider.name}
+                    {selectedProvider.id === 'azure'
+                      ? `Configuration required for ${selectedProvider.name}`
+                      : `API key required for ${selectedProvider.name}`}
                   </p>
                   <Button
                     size="sm"
                     onClick={() => handleConfigureApiKey(selectedProvider)}
                   >
-                    Configure API Key
+                    {selectedProvider.id === 'azure' ? 'Configure Azure' : 'Configure API Key'}
                   </Button>
                 </div>
               ) : (
@@ -204,7 +216,7 @@ export function ModelSwitcher() {
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         )}
                       >
-                        <span className="flex-1 truncate">{model.id}</span>
+                        <span className="flex-1 truncate">{model.name ?? model.id}</span>
                         {currentModel === model.id && (
                           <Check className="size-3.5 shrink-0 text-foreground" />
                         )}

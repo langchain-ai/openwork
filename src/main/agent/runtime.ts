@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createDeepAgent } from 'deepagents'
-import { getDefaultModel } from '../ipc/models'
-import { getApiKey, getCheckpointDbPath } from '../storage'
+import { getDefaultModel, getModelConfigById } from '../ipc/models'
+import { getApiKey, getCheckpointDbPath, getAzureConfig } from '../storage'
 import { ChatAnthropic } from '@langchain/anthropic'
-import { ChatOpenAI } from '@langchain/openai'
+import { ChatOpenAI, AzureChatOpenAI } from '@langchain/openai'
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { SqlJsSaver } from '../checkpointer/sqljs-saver'
 import { LocalSandbox } from './local-sandbox'
@@ -48,11 +48,38 @@ export async function getCheckpointer(): Promise<SqlJsSaver> {
 }
 
 // Get the appropriate model instance based on configuration
-function getModelInstance(modelId?: string): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
-  const model = modelId || getDefaultModel()
-  console.log('[Runtime] Using model:', model)
+function getModelInstance(modelId?: string): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | AzureChatOpenAI | string {
+  const selectedModelId = modelId || getDefaultModel()
+  console.log('[Runtime] Using model:', selectedModelId)
 
-  // Determine provider from model ID
+  const selectedModel = getModelConfigById(selectedModelId)
+  const provider = selectedModel?.provider
+  const model = selectedModel?.model ?? selectedModelId
+
+  if (provider === 'azure') {
+    const apiKey = getApiKey('azure')
+    const azureConfig = getAzureConfig()
+    
+    console.log('[Runtime] Azure API key present:', !!apiKey)
+    console.log('[Runtime] Azure config present:', !!azureConfig)
+    
+    if (!apiKey) {
+      throw new Error('Azure OpenAI API key not configured')
+    }
+    if (!azureConfig) {
+      throw new Error('Azure OpenAI configuration incomplete (missing endpoint, deployment, or apiVersion)')
+    }
+    
+    return new AzureChatOpenAI({
+      azureOpenAIApiKey: apiKey,
+      azureOpenAIEndpoint: azureConfig.endpoint,
+      azureOpenAIApiDeploymentName: azureConfig.deployment,
+      azureOpenAIApiVersion: azureConfig.apiVersion,
+      timeout: 60_000
+    })
+  }
+
+  // Keep existing routing behavior for non-Azure providers (prefix-based)
   if (model.startsWith('claude')) {
     const apiKey = getApiKey('anthropic')
     console.log('[Runtime] Anthropic API key present:', !!apiKey)

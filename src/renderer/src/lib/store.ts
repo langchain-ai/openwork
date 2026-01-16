@@ -112,8 +112,12 @@ interface AppState {
   loadModels: () => Promise<void>
   loadProviders: () => Promise<void>
   setCurrentModel: (modelId: string) => Promise<void>
+  getApiKey: (providerId: string) => Promise<string | null>
   setApiKey: (providerId: string, apiKey: string) => Promise<void>
   deleteApiKey: (providerId: string) => Promise<void>
+  getAzureConfig: () => Promise<{ endpoint: string; deployment: string; apiVersion: string } | null>
+  setAzureConfig: (config: { endpoint: string; deployment: string; apiVersion: string }) => Promise<void>
+  setAzureEndpoint: (endpointOrUri: string) => Promise<{ endpoint: string; apiVersion?: string } | null>
 
   // Panel actions
   setRightPanelTab: (tab: 'todos' | 'files' | 'subagents') => void
@@ -510,6 +514,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ currentModel: modelId })
   },
 
+  getApiKey: async (providerId: string) => {
+    return window.api.models.getApiKey(providerId)
+  },
+
   setApiKey: async (providerId: string, apiKey: string) => {
     console.log('[Store] setApiKey called:', { providerId, keyLength: apiKey.length })
     try {
@@ -530,6 +538,23 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Reload providers and models to update availability
     await get().loadProviders()
     await get().loadModels()
+  },
+
+  getAzureConfig: async () => {
+    return window.api.models.getAzureConfig()
+  },
+
+  setAzureConfig: async (config: { endpoint: string; deployment: string; apiVersion: string }) => {
+    await window.api.models.setAzureConfig(config)
+    await get().loadProviders()
+    await get().loadModels()
+  },
+
+  setAzureEndpoint: async (endpointOrUri: string) => {
+    const result = await window.api.models.setAzureEndpoint(endpointOrUri)
+    await get().loadProviders()
+    await get().loadModels()
+    return result
   },
 
   // Panel actions

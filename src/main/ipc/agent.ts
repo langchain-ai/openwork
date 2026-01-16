@@ -3,6 +3,7 @@ import { HumanMessage } from '@langchain/core/messages'
 import { Command } from '@langchain/langgraph'
 import { createAgentRuntime } from '../agent/runtime'
 import { getThread } from '../db'
+import { getDefaultModel } from './models'
 import type { HITLDecision } from '../types'
 
 // Track active runs for cancellation
@@ -62,7 +63,8 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
           return
         }
 
-        const agent = await createAgentRuntime({ workspacePath })
+        const modelId = getDefaultModel()
+        const agent = await createAgentRuntime({ workspacePath, modelId })
         const humanMessage = new HumanMessage(message)
 
         // Stream with both modes:
@@ -152,7 +154,8 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
       activeRuns.set(threadId, abortController)
 
       try {
-        const agent = await createAgentRuntime({ workspacePath })
+        const modelId = getDefaultModel()
+        const agent = await createAgentRuntime({ workspacePath, modelId })
         const config = {
           configurable: { thread_id: threadId },
           signal: abortController.signal,
@@ -226,7 +229,8 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
       activeRuns.set(threadId, abortController)
 
       try {
-        const agent = await createAgentRuntime({ workspacePath })
+        const modelId = getDefaultModel()
+        const agent = await createAgentRuntime({ workspacePath, modelId })
         const config = {
           configurable: { thread_id: threadId },
           signal: abortController.signal,
