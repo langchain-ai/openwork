@@ -20,7 +20,8 @@ interface CustomAPI {
       threadId: string,
       message: string,
       command: unknown,
-      onEvent: (event: StreamEvent) => void
+      onEvent: (event: StreamEvent) => void,
+      modelId?: string
     ) => () => void
     interrupt: (
       threadId: string,
