@@ -164,6 +164,14 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     available: true
   },
   {
+    id: 'gemini-3-flash-preview',
+    name: 'Gemini 3 Flash Preview',
+    provider: 'google',
+    model: 'gemini-3-flash-preview',
+    description: 'Fast frontier-class model with low latency and cost',
+    available: true
+  },
+  {
     id: 'gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     provider: 'google',

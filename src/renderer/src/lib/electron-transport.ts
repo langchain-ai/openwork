@@ -156,8 +156,11 @@ export class ElectronIPCTransport implements UseStreamTransport {
       }
     }
 
+    // Get the selected model
+    const modelId = await window.api.models.getDefault()
+
     // Start the stream via IPC
-    const cleanup = window.api.agent.streamAgent(threadId, message, command, (ipcEvent) => {
+    const cleanup = window.api.agent.streamAgent(threadId, message, modelId, command, (ipcEvent) => {
       // Convert IPC events to SDK format
       const sdkEvents = this.convertToSDKEvents(ipcEvent as IPCEvent, threadId)
 

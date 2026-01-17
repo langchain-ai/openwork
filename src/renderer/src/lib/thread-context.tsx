@@ -67,7 +67,7 @@ export interface ThreadActions {
   setPendingApproval: (request: HITLRequest | null) => void
   setError: (error: string | null) => void
   clearError: () => void
-  setCurrentModel: (modelId: string) => void
+  setCurrentModel: (modelId: string) => Promise<void>
   openFile: (path: string, name: string) => void
   closeFile: (path: string) => void
   setActiveTab: (tab: 'agent' | string) => void
@@ -435,8 +435,10 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
         clearError: () => {
           updateThreadState(threadId, () => ({ error: null }))
         },
-        setCurrentModel: (modelId: string) => {
+        setCurrentModel: async (modelId: string) => {
           updateThreadState(threadId, () => ({ currentModel: modelId }))
+          // Also update the global default so it gets used for new messages
+          await window.api.models.setDefault(modelId)
         },
         openFile: (path: string, name: string) => {
           updateThreadState(threadId, (state) => {
