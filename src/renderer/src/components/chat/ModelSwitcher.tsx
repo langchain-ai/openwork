@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronDown, Check, AlertCircle, Key } from 'lucide-react'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
@@ -53,9 +53,7 @@ interface ModelSwitcherProps {
 
 export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Element {
   const [open, setOpen] = useState(false)
-  const [manuallySelectedProviderId, setManuallySelectedProviderId] = useState<ProviderId | null>(
-    null
-  )
+  const [selectedProviderId, setSelectedProviderId] = useState<ProviderId | null>(null)
   const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false)
   const [apiKeyProvider, setApiKeyProvider] = useState<Provider | null>(null)
 
@@ -71,22 +69,20 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
   // Use fallback providers if none loaded
   const displayProviders = providers.length > 0 ? providers : FALLBACK_PROVIDERS
 
-  // Derive the selected provider from current model or manual selection
-  const selectedProviderId = useMemo(() => {
-    // If user manually selected a provider, use that
-    if (manuallySelectedProviderId) {
-      return manuallySelectedProviderId
-    }
-    // Otherwise, derive from current model
-    if (currentModel) {
+  // Set initial selected provider based on current model
+  useEffect(() => {
+    if (!selectedProviderId && currentModel) {
       const model = models.find((m) => m.id === currentModel)
       if (model) {
-        return model.provider
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setSelectedProviderId(model.provider)
       }
     }
-    // Default to first provider
-    return displayProviders[0]?.id || null
-  }, [manuallySelectedProviderId, currentModel, models, displayProviders])
+    // Default to first provider if none selected
+    if (!selectedProviderId && displayProviders.length > 0) {
+      setSelectedProviderId(displayProviders[0].id)
+    }
+  }, [currentModel, models, selectedProviderId, displayProviders])
 
   const selectedModel = models.find((m) => m.id === currentModel)
   const filteredModels = selectedProviderId
@@ -95,7 +91,7 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
   const selectedProvider = displayProviders.find((p) => p.id === selectedProviderId)
 
   function handleProviderClick(provider: Provider): void {
-    setManuallySelectedProviderId(provider.id)
+    setSelectedProviderId(provider.id)
   }
 
   function handleModelSelect(modelId: string): void {
