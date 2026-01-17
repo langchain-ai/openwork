@@ -95,6 +95,8 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps) {
 
   function handleModelSelect(modelId: string) {
     setCurrentModel(modelId)
+    // Save as default for new threads and app restarts
+    window.api.models.setDefault(modelId)
     setOpen(false)
   }
 

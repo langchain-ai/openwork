@@ -85,6 +85,20 @@ interface ThreadContextValue {
   getStreamData: (threadId: string) => StreamData
 }
 
+// Default model (will be loaded from storage)
+let cachedDefaultModel: string | null = null
+
+// Load default model from storage (called once on app start)
+async function loadDefaultModel(): Promise<string> {
+  if (cachedDefaultModel) return cachedDefaultModel
+  try {
+    cachedDefaultModel = await window.api.models.getDefault()
+    return cachedDefaultModel
+  } catch {
+    return 'claude-sonnet-4-5-20250929'
+  }
+}
+
 // Default thread state
 const createDefaultThreadState = (): ThreadState => ({
   messages: [],
@@ -94,7 +108,7 @@ const createDefaultThreadState = (): ThreadState => ({
   subagents: [],
   pendingApproval: null,
   error: null,
-  currentModel: 'claude-sonnet-4-5-20250929',
+  currentModel: cachedDefaultModel || 'claude-sonnet-4-5-20250929',
   openFiles: [],
   activeTab: 'agent',
   fileContents: {},
@@ -437,6 +451,8 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
         },
         setCurrentModel: (modelId: string) => {
           updateThreadState(threadId, () => ({ currentModel: modelId }))
+          // Update cached default model so new threads in this session use it
+          cachedDefaultModel = modelId
         },
         openFile: (path: string, name: string) => {
           updateThreadState(threadId, (state) => {
@@ -616,16 +632,21 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
   )
 
   const initializeThread = useCallback(
-    (threadId: string) => {
+    async (threadId: string) => {
       if (initializedThreadsRef.current.has(threadId)) return
       initializedThreadsRef.current.add(threadId)
+
+      // Load default model from storage if not cached
+      const defaultModel = await loadDefaultModel()
 
       // Add to active threads (this will render a ThreadStreamHolder)
       setActiveThreadIds((prev) => new Set([...prev, threadId]))
 
       setThreadStates((prev) => {
         if (prev[threadId]) return prev
-        return { ...prev, [threadId]: createDefaultThreadState() }
+        const state = createDefaultThreadState()
+        state.currentModel = defaultModel
+        return { ...prev, [threadId]: state }
       })
 
       loadThreadHistory(threadId)

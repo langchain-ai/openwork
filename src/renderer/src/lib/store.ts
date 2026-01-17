@@ -1,6 +1,52 @@
 import { create } from 'zustand'
 import type { Thread, ModelConfig, Provider } from '@/types'
 
+export type Theme = 'light' | 'dark' | 'system'
+
+const THEME_STORAGE_KEY = 'openwork-theme'
+
+// Helper to get the resolved theme (light or dark) from the theme setting
+export function getResolvedTheme(theme: Theme): 'light' | 'dark' {
+  if (theme === 'system') {
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+  }
+  return theme
+}
+
+// Helper to apply theme to the document
+export function applyTheme(theme: Theme): void {
+  const resolved = getResolvedTheme(theme)
+  const root = document.documentElement
+  
+  // Remove both classes first
+  root.classList.remove('light', 'dark')
+  
+  // Add the resolved theme class
+  root.classList.add(resolved)
+}
+
+// Helper to load theme from localStorage
+function loadStoredTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY)
+    if (stored === 'light' || stored === 'dark' || stored === 'system') {
+      return stored
+    }
+  } catch {
+    // localStorage might not be available
+  }
+  return 'system' // Default to system preference
+}
+
+// Helper to save theme to localStorage
+function saveTheme(theme: Theme): void {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, theme)
+  } catch {
+    // localStorage might not be available
+  }
+}
+
 interface AppState {
   // Threads
   threads: Thread[]
@@ -9,6 +55,9 @@ interface AppState {
   // Models and Providers (global, not per-thread)
   models: ModelConfig[]
   providers: Provider[]
+
+  // Theme
+  theme: Theme
 
   // Right panel state (UI state, not thread data)
   rightPanelTab: 'todos' | 'files' | 'subagents'
@@ -42,6 +91,10 @@ interface AppState {
   // Sidebar actions
   toggleSidebar: () => void
   setSidebarCollapsed: (collapsed: boolean) => void
+
+  // Theme actions
+  setTheme: (theme: Theme) => void
+  initializeTheme: () => void
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -50,6 +103,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentThreadId: null,
   models: [],
   providers: [],
+  theme: loadStoredTheme(),
   rightPanelTab: 'todos',
   settingsOpen: false,
   sidebarCollapsed: false,
@@ -168,5 +222,17 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   setSidebarCollapsed: (collapsed: boolean) => {
     set({ sidebarCollapsed: collapsed })
+  },
+
+  // Theme actions
+  setTheme: (theme: Theme) => {
+    saveTheme(theme)
+    applyTheme(theme)
+    set({ theme })
+  },
+
+  initializeTheme: () => {
+    const theme = get().theme
+    applyTheme(theme)
   }
 }))

@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Plus, MessageSquare, Trash2, Pencil, Loader2 } from 'lucide-react'
+import { Plus, MessageSquare, Trash2, Pencil, Loader2, Sun, Moon, Monitor, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { useAppStore } from '@/lib/store'
+import { useAppStore, type Theme, getResolvedTheme } from '@/lib/store'
 import { useThreadStream } from '@/lib/thread-context'
 import { cn, formatRelativeTime, truncate } from '@/lib/utils'
 import {
@@ -12,7 +12,14 @@ import {
   ContextMenuSeparator,
   ContextMenuTrigger
 } from '@/components/ui/context-menu'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import type { Thread } from '@/types'
+
+const THEME_OPTIONS: { id: Theme; label: string; icon: typeof Sun }[] = [
+  { id: 'light', label: 'Light', icon: Sun },
+  { id: 'dark', label: 'Dark', icon: Moon },
+  { id: 'system', label: 'System', icon: Monitor }
+]
 
 // Thread loading indicator that subscribes to the stream context
 function ThreadLoadingIcon({ threadId }: { threadId: string }): React.JSX.Element {
@@ -129,8 +136,15 @@ export function ThreadSidebar(): React.JSX.Element {
     createThread,
     selectThread,
     deleteThread,
-    updateThread
+    updateThread,
+    theme,
+    setTheme,
+    setSettingsOpen
   } = useAppStore()
+
+  // Get the icon for the current theme
+  const resolvedTheme = getResolvedTheme(theme)
+  const ThemeIcon = resolvedTheme === 'dark' ? Moon : Sun
 
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
@@ -193,6 +207,47 @@ export function ThreadSidebar(): React.JSX.Element {
           )}
         </div>
       </ScrollArea>
+
+      {/* Footer with Theme Toggle and Settings */}
+      <div className="border-t border-border p-2 flex items-center gap-1">
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon-sm" title={`Theme: ${theme}`}>
+              <ThemeIcon className="size-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-36 p-1">
+            {THEME_OPTIONS.map((option) => {
+              const Icon = option.icon
+              const isSelected = theme === option.id
+              return (
+                <button
+                  key={option.id}
+                  onClick={() => setTheme(option.id)}
+                  className={cn(
+                    'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm transition-colors',
+                    isSelected
+                      ? 'bg-accent text-accent-foreground'
+                      : 'hover:bg-secondary'
+                  )}
+                >
+                  <Icon className="size-4" />
+                  {option.label}
+                </button>
+              )
+            })}
+          </PopoverContent>
+        </Popover>
+
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          onClick={() => setSettingsOpen(true)}
+          title="Settings"
+        >
+          <Settings className="size-4" />
+        </Button>
+      </div>
     </aside>
   )
 }

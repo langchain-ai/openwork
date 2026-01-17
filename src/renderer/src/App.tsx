@@ -3,7 +3,7 @@ import { ThreadSidebar } from '@/components/sidebar/ThreadSidebar'
 import { TabbedPanel, TabBar } from '@/components/tabs'
 import { RightPanel } from '@/components/panels/RightPanel'
 import { ResizeHandle } from '@/components/ui/resizable'
-import { useAppStore } from '@/lib/store'
+import { useAppStore, applyTheme } from '@/lib/store'
 import { ThreadProvider } from '@/lib/thread-context'
 
 // Badge requires ~235 screen pixels to display with comfortable margin
@@ -16,7 +16,7 @@ const RIGHT_MAX = 450
 const RIGHT_DEFAULT = 320
 
 function App(): React.JSX.Element {
-  const { currentThreadId, loadThreads, createThread } = useAppStore()
+  const { currentThreadId, loadThreads, createThread, theme, initializeTheme } = useAppStore()
   const [isLoading, setIsLoading] = useState(true)
   const [leftWidth, setLeftWidth] = useState(LEFT_DEFAULT)
   const [rightWidth, setRightWidth] = useState(RIGHT_DEFAULT)
@@ -24,6 +24,24 @@ function App(): React.JSX.Element {
 
   // Track drag start widths
   const dragStartWidths = useRef<{ left: number; right: number } | null>(null)
+
+  // Initialize theme on mount
+  useLayoutEffect(() => {
+    initializeTheme()
+  }, [initializeTheme])
+
+  // Listen for system preference changes when theme is set to 'system'
+  useEffect(() => {
+    if (theme !== 'system') return
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+    const handleChange = (): void => {
+      applyTheme('system')
+    }
+
+    mediaQuery.addEventListener('change', handleChange)
+    return () => mediaQuery.removeEventListener('change', handleChange)
+  }, [theme])
 
   // Track zoom level changes and update CSS custom properties for safe areas
   useLayoutEffect(() => {

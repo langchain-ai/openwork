@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Eye, EyeOff, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { Eye, EyeOff, Check, AlertCircle, Loader2, Sun, Moon, Monitor } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import { useAppStore, type Theme } from '@/lib/store'
 
 interface SettingsDialogProps {
   open: boolean
@@ -44,7 +45,14 @@ const PROVIDERS: ProviderConfig[] = [
   }
 ]
 
+const THEME_OPTIONS: { id: Theme; label: string; icon: typeof Sun }[] = [
+  { id: 'light', label: 'Light', icon: Sun },
+  { id: 'dark', label: 'Dark', icon: Moon },
+  { id: 'system', label: 'System', icon: Monitor }
+]
+
 export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
+  const { theme, setTheme } = useAppStore()
   const [apiKeys, setApiKeys] = useState<Record<string, string>>({})
   const [savedKeys, setSavedKeys] = useState<Record<string, boolean>>({})
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({})
@@ -200,6 +208,39 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
               ))}
             </div>
           )}
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4 py-2">
+          <div className="text-section-header">APPEARANCE</div>
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Theme</label>
+            <div className="flex gap-2">
+              {THEME_OPTIONS.map((option) => {
+                const Icon = option.icon
+                const isSelected = theme === option.id
+                return (
+                  <button
+                    key={option.id}
+                    onClick={() => setTheme(option.id)}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors ${
+                      isSelected
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:bg-secondary'
+                    }`}
+                  >
+                    <Icon className="size-4" />
+                    {option.label}
+                  </button>
+                )
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Choose how the application appears. System will follow your OS preference.
+            </p>
+          </div>
         </div>
 
         <Separator />
