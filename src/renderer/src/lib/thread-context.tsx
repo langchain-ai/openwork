@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import {
   createContext,
   useContext,
@@ -143,7 +144,7 @@ function ThreadStreamHolder({
   onStreamUpdate: (data: StreamData) => void
   onCustomEvent: (data: CustomEventData) => void
   onError: (error: Error) => void
-}) {
+}): null {
   const transport = useMemo(() => new ElectronIPCTransport(), [])
 
   // Use refs to avoid stale closures
@@ -209,7 +210,7 @@ function ThreadStreamHolder({
   return null
 }
 
-export function ThreadProvider({ children }: { children: ReactNode }) {
+export function ThreadProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const [threadStates, setThreadStates] = useState<Record<string, ThreadState>>({})
   const [activeThreadIds, setActiveThreadIds] = useState<Set<string>>(new Set())
   const initializedThreadsRef = useRef<Set<string>>(new Set())
@@ -257,7 +258,11 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     (threadId: string): ThreadState => {
       const state = threadStates[threadId] || createDefaultThreadState()
       if (state.pendingApproval) {
-        console.log('[ThreadContext] getThreadState returning pendingApproval for:', threadId, state.pendingApproval)
+        console.log(
+          '[ThreadContext] getThreadState returning pendingApproval for:',
+          threadId,
+          state.pendingApproval
+        )
       }
       return state
     },
@@ -283,7 +288,9 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     const errorMessage = typeof error === 'string' ? error : error.message
 
     // Check for context window exceeded errors
-    const contextWindowMatch = errorMessage.match(/prompt is too long: (\d+) tokens > (\d+) maximum/i)
+    const contextWindowMatch = errorMessage.match(
+      /prompt is too long: (\d+) tokens > (\d+) maximum/i
+    )
     if (contextWindowMatch) {
       const [, usedTokens, maxTokens] = contextWindowMatch
       const usedK = Math.round(parseInt(usedTokens) / 1000)
@@ -297,7 +304,11 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     }
 
     // Check for authentication errors
-    if (errorMessage.includes('401') || errorMessage.includes('invalid_api_key') || errorMessage.includes('authentication')) {
+    if (
+      errorMessage.includes('401') ||
+      errorMessage.includes('invalid_api_key') ||
+      errorMessage.includes('authentication')
+    ) {
       return 'Authentication failed. Please check your API key in settings.'
     }
 
@@ -322,7 +333,11 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       switch (data.type) {
         case 'interrupt':
           if (data.request) {
-            console.log('[ThreadContext] Setting pendingApproval for thread:', threadId, data.request)
+            console.log(
+              '[ThreadContext] Setting pendingApproval for thread:',
+              threadId,
+              data.request
+            )
             updateThreadState(threadId, () => ({ pendingApproval: data.request }))
           }
           break
@@ -449,7 +464,8 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
         closeFile: (path: string) => {
           updateThreadState(threadId, (state) => {
             const newOpenFiles = state.openFiles.filter((f) => f.path !== path)
-            const { [path]: _, ...newFileContents } = state.fileContents
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { [path]: _removed, ...newFileContents } = state.fileContents
             let newActiveTab = state.activeTab
             if (state.activeTab === path) {
               const closedIndex = state.openFiles.findIndex((f) => f.path === path)
@@ -457,7 +473,11 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
               else if (closedIndex > 0) newActiveTab = newOpenFiles[closedIndex - 1].path
               else newActiveTab = newOpenFiles[0].path
             }
-            return { openFiles: newOpenFiles, activeTab: newActiveTab, fileContents: newFileContents }
+            return {
+              openFiles: newOpenFiles,
+              activeTab: newActiveTab,
+              fileContents: newFileContents
+            }
           })
         },
         setActiveTab: (tab: 'agent' | string) => {
@@ -644,7 +664,8 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       return next
     })
     setThreadStates((prev) => {
-      const { [threadId]: _, ...rest } = prev
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [threadId]: _removed, ...rest } = prev
       return rest
     })
   }, [])
@@ -658,7 +679,14 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       subscribeToStream,
       getStreamData
     }),
-    [getThreadState, getThreadActions, initializeThread, cleanupThread, subscribeToStream, getStreamData]
+    [
+      getThreadState,
+      getThreadActions,
+      initializeThread,
+      cleanupThread,
+      subscribeToStream,
+      getStreamData
+    ]
   )
 
   return (
@@ -685,7 +713,7 @@ export function useThreadContext(): ThreadContextValue {
 }
 
 // Hook to subscribe to stream data for a thread using useSyncExternalStore
-export function useThreadStream(threadId: string) {
+export function useThreadStream(threadId: string): StreamData {
   const context = useThreadContext()
 
   const subscribe = useCallback(
@@ -699,7 +727,7 @@ export function useThreadStream(threadId: string) {
 }
 
 // Hook to access current thread's state and actions
-export function useCurrentThread(threadId: string) {
+export function useCurrentThread(threadId: string): ThreadState & ThreadActions {
   const context = useThreadContext()
 
   useEffect(() => {
@@ -713,7 +741,7 @@ export function useCurrentThread(threadId: string) {
 }
 
 // Hook for nullable threadId
-export function useThreadState(threadId: string | null) {
+export function useThreadState(threadId: string | null): (ThreadState & ThreadActions) | null {
   const context = useThreadContext()
 
   useEffect(() => {
