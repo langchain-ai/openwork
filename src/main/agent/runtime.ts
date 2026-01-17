@@ -99,6 +99,21 @@ function getModelInstance(modelId?: string): ChatAnthropic | ChatOpenAI | ChatGo
       model,
       apiKey: apiKey
     })
+  } else if (model.startsWith('n1n')) {
+    const apiKey = getApiKey('n1n')
+    console.log('[Runtime] n1n API key present:', !!apiKey)
+    if (!apiKey) {
+      throw new Error('n1n API key not configured')
+    }
+    // Extract actual model name if prefixed with 'n1n-'
+    const actualModel = model.replace(/^n1n-/, '')
+    return new ChatOpenAI({
+      model: actualModel,
+      openAIApiKey: apiKey,
+      configuration: {
+        baseURL: 'https://api.n1n.ai/v1'
+      }
+    })
   }
 
   // Default to model string (let deepagents handle it)

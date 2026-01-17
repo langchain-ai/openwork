@@ -16,11 +16,29 @@ const store = new Store({
 const PROVIDERS: Omit<Provider, 'hasApiKey'>[] = [
   { id: 'anthropic', name: 'Anthropic' },
   { id: 'openai', name: 'OpenAI' },
-  { id: 'google', name: 'Google' }
+  { id: 'google', name: 'Google' },
+  { id: 'n1n', name: 'n1n' }
 ]
 
 // Available models configuration (updated Jan 2026)
 const AVAILABLE_MODELS: ModelConfig[] = [
+  // n1n series
+  {
+    id: 'n1n-gpt-4o',
+    name: 'n1n GPT-4o',
+    provider: 'n1n',
+    model: 'gpt-4o',
+    description: 'OpenAI GPT-4o via n1n.ai',
+    available: true
+  },
+  {
+    id: 'n1n-claude-3-5-sonnet',
+    name: 'n1n Claude 3.5 Sonnet',
+    provider: 'n1n',
+    model: 'claude-3-5-sonnet-20240620',
+    description: 'Anthropic Claude 3.5 Sonnet via n1n.ai',
+    available: true
+  },
   // Anthropic Claude 4.5 series (latest as of Jan 2026)
   {
     id: 'claude-opus-4-5-20251101',
