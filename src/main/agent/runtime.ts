@@ -59,7 +59,9 @@ export async function closeCheckpointer(threadId: string): Promise<void> {
 }
 
 // Get the appropriate model instance based on configuration
-function getModelInstance(modelId?: string): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
+function getModelInstance(
+  modelId?: string
+): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
   const model = modelId || getDefaultModel()
   console.log('[Runtime] Using model:', model)
 

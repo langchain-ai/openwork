@@ -124,10 +124,7 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
     'agent:resume',
     async (
       event,
-      {
-        threadId,
-        command
-      }: { threadId: string; command: { resume?: { decision?: string } } }
+      { threadId, command }: { threadId: string; command: { resume?: { decision?: string } } }
     ) => {
       const channel = `agent:stream:${threadId}`
       const window = BrowserWindow.fromWebContents(event.sender)

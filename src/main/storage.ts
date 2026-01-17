@@ -75,7 +75,7 @@ function parseEnvFile(): Record<string, string> {
 function writeEnvFile(env: Record<string, string>): void {
   getOpenworkDir() // ensure dir exists
   const lines = Object.entries(env)
-    .filter(([_, v]) => v)
+    .filter(([, v]) => v)
     .map(([k, v]) => `${k}=${v}`)
   writeFileSync(getEnvFilePath(), lines.join('\n') + '\n')
 }
