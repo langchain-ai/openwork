@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  openwork:
+    build: .
+    container_name: openwork
+    volumes:
+      - .:/app
+      - /app/node_modules
+    # To run the GUI application, you typically need to forward the display.
+    # On Linux:
+    # environment:
+    #   - DISPLAY=${DISPLAY}
+    # volumes:
+    #   - /tmp/.X11-unix:/tmp/.X11-unix
+    # On other platforms, additional setup (like XQuartz on macOS) is required.
