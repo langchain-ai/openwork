@@ -33,6 +33,12 @@ RUN npm install
 
 COPY . .
 
+# Fix permissions for the node user
+RUN chown -R node:node /app
+
+# Run as non-root user to avoid sandbox issues
+USER node
+
 # Expose default Vite port if needed, though Electron apps usually don't expose a web port externally by default
 EXPOSE 5173
 
