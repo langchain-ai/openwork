@@ -26,6 +26,9 @@ WORKDIR /app
 
 COPY package*.json ./
 
+# Flag to indicate running inside Docker
+ENV IS_DOCKER=true
+
 RUN npm install
 
 COPY . .

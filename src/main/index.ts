@@ -5,6 +5,12 @@ import { registerThreadHandlers } from './ipc/threads'
 import { registerModelHandlers } from './ipc/models'
 import { initializeDatabase } from './db'
 
+// Handle Docker environment specific flags
+if (process.env['IS_DOCKER']) {
+  app.commandLine.appendSwitch('no-sandbox')
+  app.commandLine.appendSwitch('disable-gpu')
+}
+
 // Suppress expected errors from LangChain stream handlers when streams are aborted
 // These occur when the LLM is still generating but the stream has been closed
 const originalConsoleError = console.error
