@@ -98,8 +98,9 @@ export class ElectronIPCTransport implements UseStreamTransport {
     this.activeSubagents.clear()
     this.accumulatedToolCalls.clear()
     this.completedToolCallsByName.clear()
-    // Extract thread ID from config
+    // Extract thread ID and model ID from config
     const threadId = payload.config?.configurable?.thread_id
+    const modelId = payload.config?.configurable?.model_id as string | undefined
     if (!threadId) {
       return this.createErrorGenerator('MISSING_THREAD_ID', 'Thread ID is required')
     }
@@ -122,7 +123,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
     }
 
     // Create an async generator that bridges IPC events
-    return this.createStreamGenerator(threadId, messageContent, payload.command, payload.signal)
+    return this.createStreamGenerator(threadId, messageContent, payload.command, payload.signal, modelId)
   }
 
   private async *createErrorGenerator(code: string, message: string): AsyncGenerator<StreamEvent> {
@@ -136,7 +137,8 @@ export class ElectronIPCTransport implements UseStreamTransport {
     threadId: string,
     message: string,
     command: unknown,
-    signal: AbortSignal
+    signal: AbortSignal,
+    modelId?: string
   ): AsyncGenerator<StreamEvent> {
     // Create a queue to buffer events from IPC
     const eventQueue: StreamEvent[] = []
@@ -156,7 +158,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
       }
     }
 
-    // Start the stream via IPC
+    // Start the stream via IPC (pass modelId to use the selected model)
     const cleanup = window.api.agent.streamAgent(threadId, message, command, (ipcEvent) => {
       // Convert IPC events to SDK format
       const sdkEvents = this.convertToSDKEvents(ipcEvent as IPCEvent, threadId)
@@ -177,7 +179,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
           eventQueue.push(sdkEvent)
         }
       }
-    })
+    }, modelId)
 
     // Handle abort signal
     if (signal) {

@@ -14,13 +14,14 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
   // Handle agent invocation with streaming
   ipcMain.on(
     'agent:invoke',
-    async (event, { threadId, message }: { threadId: string; message: string }) => {
+    async (event, { threadId, message, modelId }: { threadId: string; message: string; modelId?: string }) => {
       const channel = `agent:stream:${threadId}`
       const window = BrowserWindow.fromWebContents(event.sender)
 
       console.log('[Agent] Received invoke request:', {
         threadId,
-        message: message.substring(0, 50)
+        message: message.substring(0, 50),
+        modelId
       })
 
       if (!window) {
@@ -62,7 +63,7 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
           return
         }
 
-        const agent = await createAgentRuntime({ threadId, workspacePath })
+        const agent = await createAgentRuntime({ threadId, workspacePath, modelId })
         const humanMessage = new HumanMessage(message)
 
         // Stream with both modes:
@@ -126,13 +127,14 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
       event,
       {
         threadId,
-        command
-      }: { threadId: string; command: { resume?: { decision?: string } } }
+        command,
+        modelId
+      }: { threadId: string; command: { resume?: { decision?: string } }; modelId?: string }
     ) => {
       const channel = `agent:stream:${threadId}`
       const window = BrowserWindow.fromWebContents(event.sender)
 
-      console.log('[Agent] Received resume request:', { threadId, command })
+      console.log('[Agent] Received resume request:', { threadId, command, modelId })
 
       if (!window) {
         console.error('[Agent] No window found for resume')
@@ -163,7 +165,7 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
       activeRuns.set(threadId, abortController)
 
       try {
-        const agent = await createAgentRuntime({ threadId, workspacePath })
+        const agent = await createAgentRuntime({ threadId, workspacePath, modelId })
         const config = {
           configurable: { thread_id: threadId },
           signal: abortController.signal,

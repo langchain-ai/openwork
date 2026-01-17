@@ -27,7 +27,8 @@ const api = {
     invoke: (
       threadId: string,
       message: string,
-      onEvent: (event: StreamEvent) => void
+      onEvent: (event: StreamEvent) => void,
+      modelId?: string
     ): (() => void) => {
       const channel = `agent:stream:${threadId}`
 
@@ -39,7 +40,7 @@ const api = {
       }
 
       ipcRenderer.on(channel, handler)
-      ipcRenderer.send('agent:invoke', { threadId, message })
+      ipcRenderer.send('agent:invoke', { threadId, message, modelId })
 
       // Return cleanup function
       return () => {
@@ -51,7 +52,8 @@ const api = {
       threadId: string,
       message: string,
       command: unknown,
-      onEvent: (event: StreamEvent) => void
+      onEvent: (event: StreamEvent) => void,
+      modelId?: string
     ): (() => void) => {
       const channel = `agent:stream:${threadId}`
 
@@ -66,9 +68,9 @@ const api = {
 
       // If we have a command, it might be a resume/retry
       if (command) {
-        ipcRenderer.send('agent:resume', { threadId, command })
+        ipcRenderer.send('agent:resume', { threadId, command, modelId })
       } else {
-        ipcRenderer.send('agent:invoke', { threadId, message })
+        ipcRenderer.send('agent:invoke', { threadId, message, modelId })
       }
 
       // Return cleanup function

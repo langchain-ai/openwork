@@ -67,12 +67,15 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
       setPendingApproval(null)
 
       try {
-        await stream.submit(null, { command: { resume: { decision } } })
+        await stream.submit(null, {
+          command: { resume: { decision } },
+          config: { configurable: { thread_id: threadId, model_id: currentModel } }
+        })
       } catch (err) {
         console.error('[ChatContainer] Resume command failed:', err)
       }
     },
-    [pendingApproval, setPendingApproval, stream]
+    [pendingApproval, setPendingApproval, stream, threadId, currentModel]
   )
 
   const agentValues = stream?.values as AgentStreamValues | undefined
@@ -252,7 +255,7 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
       },
       {
         config: {
-          configurable: { thread_id: threadId }
+          configurable: { thread_id: threadId, model_id: currentModel }
         }
       }
     )

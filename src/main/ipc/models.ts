@@ -168,7 +168,7 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     name: 'Gemini 3 Flash Preview',
     provider: 'google',
     model: 'gemini-3-flash-preview',
-    description: 'Fast and efficient model for complex reasoning and coding',
+    description: 'Fast frontier-class model with low latency and cost',
     available: true
   },
   {
