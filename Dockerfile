@@ -42,4 +42,4 @@ USER node
 # Expose default Vite port if needed, though Electron apps usually don't expose a web port externally by default
 EXPOSE 5173
 
-CMD ["npm", "run", "dev"]
+CMD ["npm", "run", "dev:docker"]

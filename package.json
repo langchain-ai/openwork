@@ -43,6 +43,7 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "start": "electron-vite preview",
     "dev": "electron-vite dev",
+    "dev:docker": "electron-vite dev -- --no-sandbox",
     "build": "npm run typecheck && electron-vite build"
   },
   "dependencies": {
