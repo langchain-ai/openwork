@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createDeepAgent } from 'deepagents'
 import { getDefaultModel } from '../ipc/models'
-import { getApiKey, getThreadCheckpointPath } from '../storage'
+import { getApiKey, getOpenworkDir, getThreadCheckpointPath } from '../storage'
+import Store from 'electron-store'
 import { ChatAnthropic } from '@langchain/anthropic'
 import { ChatOpenAI } from '@langchain/openai'
+import { DeepSeekChatOpenAI } from './deepseek-model'
 import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
 import { SqlJsSaver } from '../checkpointer/sqljs-saver'
 import { LocalSandbox } from './local-sandbox'
@@ -14,6 +16,34 @@ import type * as _lcLanggraph from '@langchain/langgraph'
 import type * as _lcZodTypes from '@langchain/core/utils/types'
 
 import { BASE_SYSTEM_PROMPT } from './system-prompt'
+
+function ensureGraphInterruptHasInterrupts(): void {
+  const errorProto = Error.prototype as { interrupts?: unknown }
+  if (Object.prototype.hasOwnProperty.call(errorProto, 'interrupts')) {
+    return
+  }
+
+  Object.defineProperty(errorProto, 'interrupts', {
+    configurable: true,
+    get() {
+      if (this && (this.name === 'GraphInterrupt' || this.name === 'NodeInterrupt')) {
+        return []
+      }
+      return undefined
+    }
+  })
+}
+
+ensureGraphInterruptHasInterrupts()
+
+const settingsStore = new Store({
+  name: 'settings',
+  cwd: getOpenworkDir()
+})
+
+function getAutoApproveExecute(): boolean {
+  return Boolean(settingsStore.get('autoApproveExecute', false))
+}
 
 /**
  * Generate the full system prompt for the agent.
@@ -59,7 +89,9 @@ export async function closeCheckpointer(threadId: string): Promise<void> {
 }
 
 // Get the appropriate model instance based on configuration
-function getModelInstance(modelId?: string): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
+function getModelInstance(
+  modelId?: string
+): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | DeepSeekChatOpenAI | string {
   const model = modelId || getDefaultModel()
   console.log('[Runtime] Using model:', model)
 
@@ -87,7 +119,19 @@ function getModelInstance(modelId?: string): ChatAnthropic | ChatOpenAI | ChatGo
     }
     return new ChatOpenAI({
       model,
-      openAIApiKey: apiKey
+      apiKey
+    })
+  } else if (model.startsWith('deepseek')) {
+    const apiKey = getApiKey('deepseek')
+    console.log('[Runtime] DeepSeek API key present:', !!apiKey)
+    if (!apiKey) {
+      throw new Error('DeepSeek API key not configured')
+    }
+    return new DeepSeekChatOpenAI({
+      model,
+      apiKey,
+      configuration: { baseURL: 'https://api.deepseek.com' },
+      streaming: false
     })
   } else if (model.startsWith('gemini')) {
     const apiKey = getApiKey('google')
@@ -162,6 +206,9 @@ export async function createAgentRuntime(options: CreateAgentRuntimeOptions) {
 
 The workspace root is: ${workspacePath}`
 
+  const autoApproveExecute = getAutoApproveExecute()
+  const interruptOn = autoApproveExecute ? undefined : { execute: true }
+
   const agent = createDeepAgent({
     model,
     checkpointer,
@@ -170,7 +217,7 @@ The workspace root is: ${workspacePath}`
     // Custom filesystem prompt for absolute paths (requires deepagents update)
     filesystemSystemPrompt,
     // Require human approval for all shell commands
-    interruptOn: { execute: true }
+    ...(interruptOn ? { interruptOn } : {})
   } as Parameters<typeof createDeepAgent>[0])
 
   console.log('[Runtime] Deep agent created with LocalSandbox at:', workspacePath)

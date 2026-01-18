@@ -9,7 +9,8 @@ const ENV_FILE = join(OPENWORK_DIR, '.env')
 const ENV_VAR_NAMES: Record<string, string> = {
   anthropic: 'ANTHROPIC_API_KEY',
   openai: 'OPENAI_API_KEY',
-  google: 'GOOGLE_API_KEY'
+  google: 'GOOGLE_API_KEY',
+  deepseek: 'DEEPSEEK_API_KEY'
 }
 
 export function getOpenworkDir(): string {

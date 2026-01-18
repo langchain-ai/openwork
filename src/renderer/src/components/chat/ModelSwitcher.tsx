@@ -33,10 +33,19 @@ function GoogleIcon({ className }: { className?: string }) {
   )
 }
 
+function DeepSeekIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 3c-4.962 0-9 4.038-9 9s4.038 9 9 9c3.938 0 7.29-2.55 8.485-6.087h-3.27A5.507 5.507 0 0 1 12 17.5 5.5 5.5 0 1 1 17.5 12c0 .286-.022.566-.064.84h3.255C20.898 7.635 16.655 3 12 3z"/>
+    </svg>
+  )
+}
+
 const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
   anthropic: AnthropicIcon,
   openai: OpenAIIcon,
   google: GoogleIcon,
+  deepseek: DeepSeekIcon,
   ollama: () => null // No icon for ollama yet
 }
 
@@ -44,7 +53,8 @@ const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
 const FALLBACK_PROVIDERS: Provider[] = [
   { id: 'anthropic', name: 'Anthropic', hasApiKey: false },
   { id: 'openai', name: 'OpenAI', hasApiKey: false },
-  { id: 'google', name: 'Google', hasApiKey: false }
+  { id: 'google', name: 'Google', hasApiKey: false },
+  { id: 'deepseek', name: 'DeepSeek', hasApiKey: false }
 ]
 
 interface ModelSwitcherProps {
@@ -95,6 +105,9 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps) {
 
   function handleModelSelect(modelId: string) {
     setCurrentModel(modelId)
+    window.api.models.setDefault(modelId).catch((error) => {
+      console.error('[ModelSwitcher] Failed to persist default model:', error)
+    })
     setOpen(false)
   }
 

@@ -20,7 +20,8 @@ interface CustomAPI {
       threadId: string,
       message: string,
       command: unknown,
-      onEvent: (event: StreamEvent) => void
+      onEvent: (event: StreamEvent) => void,
+      modelId?: string
     ) => () => void
     interrupt: (
       threadId: string,
@@ -46,6 +47,10 @@ interface CustomAPI {
     setDefault: (modelId: string) => Promise<void>
     setApiKey: (provider: string, apiKey: string) => Promise<void>
     getApiKey: (provider: string) => Promise<string | null>
+  }
+  settings: {
+    getAutoApproveExecute: () => Promise<boolean>
+    setAutoApproveExecute: (value: boolean) => Promise<void>
   }
   workspace: {
     get: (threadId?: string) => Promise<string | null>

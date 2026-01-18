@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Plus, MessageSquare, Trash2, Pencil, Loader2 } from 'lucide-react'
+import { Plus, MessageSquare, Trash2, Pencil, Loader2, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { useAppStore } from '@/lib/store'
 import { useThreadStream } from '@/lib/thread-context'
 import { cn, formatRelativeTime, truncate } from '@/lib/utils'
+import { SettingsDialog } from '@/components/settings/SettingsDialog'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -134,6 +135,7 @@ export function ThreadSidebar(): React.JSX.Element {
 
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
+  const [settingsOpen, setSettingsOpen] = useState(false)
 
   const startEditing = (threadId: string, currentTitle: string): void => {
     setEditingThreadId(threadId)
@@ -161,10 +163,25 @@ export function ThreadSidebar(): React.JSX.Element {
     <aside className="flex h-full w-full flex-col border-r border-border bg-sidebar overflow-hidden">
       {/* New Thread Button - with dynamic safe area padding when zoomed out */}
       <div className="p-2" style={{ paddingTop: 'calc(8px + var(--sidebar-safe-padding, 0px))' }}>
-        <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={handleNewThread}>
-          <Plus className="size-4" />
-          New Thread
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 justify-start gap-2"
+            onClick={handleNewThread}
+          >
+            <Plus className="size-4" />
+            New Thread
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Open settings"
+            onClick={() => setSettingsOpen(true)}
+          >
+            <Settings className="size-4" />
+          </Button>
+        </div>
       </div>
 
       {/* Thread List */}
@@ -193,6 +210,8 @@ export function ThreadSidebar(): React.JSX.Element {
           )}
         </div>
       </ScrollArea>
+
+      <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
     </aside>
   )
 }
