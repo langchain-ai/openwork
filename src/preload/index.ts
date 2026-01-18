@@ -160,7 +160,9 @@ const api = {
     select: (threadId?: string): Promise<string | null> => {
       return ipcRenderer.invoke('workspace:select', threadId)
     },
-    loadFromDisk: (threadId: string): Promise<{
+    loadFromDisk: (
+      threadId: string
+    ): Promise<{
       success: boolean
       files: Array<{
         path: string
@@ -173,7 +175,10 @@ const api = {
     }> => {
       return ipcRenderer.invoke('workspace:loadFromDisk', { threadId })
     },
-    readFile: (threadId: string, filePath: string): Promise<{
+    readFile: (
+      threadId: string,
+      filePath: string
+    ): Promise<{
       success: boolean
       content?: string
       size?: number
@@ -182,7 +187,10 @@ const api = {
     }> => {
       return ipcRenderer.invoke('workspace:readFile', { threadId, filePath })
     },
-    readBinaryFile: (threadId: string, filePath: string): Promise<{
+    readBinaryFile: (
+      threadId: string,
+      filePath: string
+    ): Promise<{
       success: boolean
       content?: string
       size?: number

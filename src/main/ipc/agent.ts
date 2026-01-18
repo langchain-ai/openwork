@@ -130,7 +130,7 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
         command,
         modelId
       }: { threadId: string; command: { resume?: { decision?: string } }; modelId?: string }
-    ) => {
+    ): Promise<void> => {
       const channel = `agent:stream:${threadId}`
       const window = BrowserWindow.fromWebContents(event.sender)
 
