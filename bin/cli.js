@@ -42,7 +42,11 @@ const child = spawn(electron, [mainPath, ...args], {
   stdio: 'inherit'
 })
 
-// Forward signals to child process
+/**
+ * Forward signals to child process
+ * @param {NodeJS.Signals} signal - The signal to forward
+ * @returns {void}
+ */
 function forwardSignal(signal) {
   if (child.pid) {
     process.kill(child.pid, signal)

@@ -24,13 +24,17 @@ const PROVIDER_INFO: Record<string, { placeholder: string; envVar: string }> = {
   google: { placeholder: 'AIza...', envVar: 'GOOGLE_API_KEY' }
 }
 
-export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps) {
+export function ApiKeyDialog({
+  open,
+  onOpenChange,
+  provider
+}: ApiKeyDialogProps): JSX.Element | null {
   const [apiKey, setApiKey] = useState('')
   const [showKey, setShowKey] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [hasExistingKey, setHasExistingKey] = useState(false)
-  
+
   const { setApiKey: saveApiKey, deleteApiKey } = useAppStore()
 
   // Check if there's an existing key when dialog opens
@@ -46,10 +50,10 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
 
   const info = PROVIDER_INFO[provider.id] || { placeholder: '...', envVar: '' }
 
-  async function handleSave() {
+  async function handleSave(): Promise<void> {
     if (!apiKey.trim()) return
     if (!provider) return
-    
+
     console.log('[ApiKeyDialog] Saving API key for provider:', provider.id)
     setSaving(true)
     try {
@@ -63,7 +67,7 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
     }
   }
 
-  async function handleDelete() {
+  async function handleDelete(): Promise<void> {
     if (!provider) return
     setDeleting(true)
     try {
@@ -84,10 +88,9 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
             {hasExistingKey ? `Update ${provider.name} API Key` : `Add ${provider.name} API Key`}
           </DialogTitle>
           <DialogDescription>
-            {hasExistingKey 
+            {hasExistingKey
               ? 'Enter a new API key to replace the existing one, or remove it.'
-              : `Enter your ${provider.name} API key to use their models.`
-            }
+              : `Enter your ${provider.name} API key to use their models.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -139,16 +142,8 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button
-              type="button"
-              onClick={handleSave}
-              disabled={!apiKey.trim() || saving}
-            >
-              {saving ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                'Save'
-              )}
+            <Button type="button" onClick={handleSave} disabled={!apiKey.trim() || saving}>
+              {saving ? <Loader2 className="size-4 animate-spin" /> : 'Save'}
             </Button>
           </div>
         </div>

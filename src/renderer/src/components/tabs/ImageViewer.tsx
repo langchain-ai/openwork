@@ -9,36 +9,40 @@ interface ImageViewerProps {
   mimeType: string
 }
 
-export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerProps) {
+export function ImageViewer({
+  filePath,
+  base64Content,
+  mimeType
+}: ImageViewerProps): React.JSX.Element {
   const [zoom, setZoom] = useState(100)
   const [rotation, setRotation] = useState(0)
   const [isPanning, setIsPanning] = useState(false)
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
-  
+
   const fileName = filePath.split('/').pop() || filePath
   const imageUrl = `data:${mimeType};base64,${base64Content}`
 
-  const handleZoomIn = () => {
+  const handleZoomIn = (): void => {
     setZoom((prev) => Math.min(prev + 25, 400))
   }
 
-  const handleZoomOut = () => {
+  const handleZoomOut = (): void => {
     setZoom((prev) => Math.max(prev - 25, 25))
   }
 
-  const handleResetZoom = () => {
+  const handleResetZoom = (): void => {
     setZoom(100)
     setRotation(0)
     setPanOffset({ x: 0, y: 0 })
   }
 
-  const handleRotate = () => {
+  const handleRotate = (): void => {
     setRotation((prev) => (prev + 90) % 360)
   }
 
-  const handleMouseDown = (e: React.MouseEvent) => {
+  const handleMouseDown = (e: React.MouseEvent): void => {
     if (zoom > 100) {
       setIsPanning(true)
       setPanStart({ x: e.clientX - panOffset.x, y: e.clientY - panOffset.y })
@@ -46,7 +50,7 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
     }
   }
 
-  const handleMouseMove = (e: React.MouseEvent) => {
+  const handleMouseMove = (e: React.MouseEvent): void => {
     if (isPanning && zoom > 100) {
       setPanOffset({
         x: e.clientX - panStart.x,
@@ -55,17 +59,20 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
     }
   }
 
-  const handleMouseUp = () => {
+  const handleMouseUp = (): void => {
     setIsPanning(false)
   }
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = (): void => {
     setIsPanning(false)
   }
 
   // Reset pan when zoom changes to 100 or less
+  // TODO: Consider moving this logic to the zoom change handler to avoid setState in effect.
+  // Keeping as-is for now to minimize risk in linter cleanup PR.
   useEffect(() => {
     if (zoom <= 100) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPanOffset({ x: 0, y: 0 })
     }
   }, [zoom])
@@ -90,7 +97,7 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
             </>
           )}
         </div>
-        
+
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -101,11 +108,9 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
           >
             <ZoomOut className="size-4" />
           </Button>
-          
-          <span className="text-xs text-muted-foreground min-w-[3rem] text-center">
-            {zoom}%
-          </span>
-          
+
+          <span className="text-xs text-muted-foreground min-w-[3rem] text-center">{zoom}%</span>
+
           <Button
             variant="ghost"
             size="sm"
@@ -115,22 +120,12 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
           >
             <ZoomIn className="size-4" />
           </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRotate}
-            className="h-7 px-2"
-          >
+
+          <Button variant="ghost" size="sm" onClick={handleRotate} className="h-7 px-2">
             <RotateCw className="size-4" />
           </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleResetZoom}
-            className="h-7 px-2"
-          >
+
+          <Button variant="ghost" size="sm" onClick={handleResetZoom} className="h-7 px-2">
             <Maximize2 className="size-4" />
           </Button>
         </div>
@@ -138,7 +133,7 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
 
       {/* Image display */}
       <ScrollArea className="flex-1 min-h-0">
-        <div 
+        <div
           ref={containerRef}
           className="flex items-center justify-center min-h-full p-8 overflow-hidden"
           onMouseDown={handleMouseDown}
