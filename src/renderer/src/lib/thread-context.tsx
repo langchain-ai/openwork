@@ -652,6 +652,21 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     [getThreadActions, updateThreadState]
   )
 
+  const loadDefaultModel = useCallback(
+    async (threadId: string) => {
+      const actions = getThreadActions(threadId)
+      try {
+        const modelId = await window.api.models.getDefault()
+        if (modelId) {
+          actions.setCurrentModel(modelId)
+        }
+      } catch (error) {
+        console.error('[ThreadContext] Failed to load default model:', error)
+      }
+    },
+    [getThreadActions]
+  )
+
   const initializeThread = useCallback(
     (threadId: string) => {
       if (initializedThreadsRef.current.has(threadId)) return
@@ -666,8 +681,9 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       })
 
       loadThreadHistory(threadId)
+      loadDefaultModel(threadId)
     },
-    [loadThreadHistory]
+    [loadThreadHistory, loadDefaultModel]
   )
 
   const cleanupThread = useCallback((threadId: string) => {
