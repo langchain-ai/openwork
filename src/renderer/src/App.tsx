@@ -120,68 +120,68 @@ function App(): React.JSX.Element {
 
   return (
     <ThreadProvider>
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Fixed app badge - zoom independent position and size */}
-      <div
-        className="app-badge"
-        style={{
-          // Compensate both position and scale for zoom
-          // Target screen position: top 14px, left 82px (just past traffic lights)
-          top: `${14 / zoomLevel}px`,
-          left: `${82 / zoomLevel}px`,
-          transform: `scale(${1 / zoomLevel})`,
-          transformOrigin: 'top left'
-        }}
-      >
-        <span className="app-badge-name">OPENWORK</span>
-        <span className="app-badge-version">{__APP_VERSION__}</span>
-      </div>
+      <div className="flex h-screen overflow-hidden bg-background">
+        {/* Fixed app badge - zoom independent position and size */}
+        <div
+          className="app-badge"
+          style={{
+            // Compensate both position and scale for zoom
+            // Target screen position: top 14px, left 82px (just past traffic lights)
+            top: `${14 / zoomLevel}px`,
+            left: `${82 / zoomLevel}px`,
+            transform: `scale(${1 / zoomLevel})`,
+            transformOrigin: 'top left'
+          }}
+        >
+          <span className="app-badge-name">OPENWORK</span>
+          <span className="app-badge-version">{__APP_VERSION__}</span>
+        </div>
 
-      {/* Left + Center column */}
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Titlebar row with tabs integrated */}
-        <div className="flex h-9 w-full shrink-0 app-drag-region bg-sidebar">
-          {/* Left section - spacer for traffic lights + badge (matches left sidebar width) */}
-          <div style={{ width: leftWidth }} className="shrink-0" />
+        {/* Left + Center column */}
+        <div className="flex flex-col flex-1 min-w-0">
+          {/* Titlebar row with tabs integrated */}
+          <div className="flex h-9 w-full shrink-0 app-drag-region bg-sidebar">
+            {/* Left section - spacer for traffic lights + badge (matches left sidebar width) */}
+            <div style={{ width: leftWidth }} className="shrink-0" />
 
-          {/* Resize handle spacer */}
-          <div className="w-[1px] shrink-0" />
+            {/* Resize handle spacer */}
+            <div className="w-[1px] shrink-0" />
 
-          {/* Center section - Tab bar */}
-          <div className="flex-1 min-w-0">
-            {currentThreadId && <TabBar className="h-full border-b-0" />}
+            {/* Center section - Tab bar */}
+            <div className="flex-1 min-w-0">
+              {currentThreadId && <TabBar className="h-full border-b-0" />}
+            </div>
+          </div>
+
+          {/* Main content area */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Sidebar - Thread List */}
+            <div style={{ width: leftWidth }} className="shrink-0">
+              <ThreadSidebar />
+            </div>
+
+            <ResizeHandle onDrag={handleLeftResize} />
+
+            {/* Center - Content Panel (Agent Chat + File Viewer) */}
+            <main className="flex flex-1 flex-col min-w-0 overflow-hidden">
+              {currentThreadId ? (
+                <TabbedPanel threadId={currentThreadId} showTabBar={false} />
+              ) : (
+                <div className="flex flex-1 items-center justify-center text-muted-foreground">
+                  Select or create a thread to begin
+                </div>
+              )}
+            </main>
           </div>
         </div>
 
-        {/* Main content area */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar - Thread List */}
-          <div style={{ width: leftWidth }} className="shrink-0">
-            <ThreadSidebar />
-          </div>
+        <ResizeHandle onDrag={handleRightResize} />
 
-          <ResizeHandle onDrag={handleLeftResize} />
-
-          {/* Center - Content Panel (Agent Chat + File Viewer) */}
-          <main className="flex flex-1 flex-col min-w-0 overflow-hidden">
-            {currentThreadId ? (
-              <TabbedPanel threadId={currentThreadId} showTabBar={false} />
-            ) : (
-              <div className="flex flex-1 items-center justify-center text-muted-foreground">
-                Select or create a thread to begin
-              </div>
-            )}
-          </main>
+        {/* Right Panel - Status Panels (full height) */}
+        <div style={{ width: rightWidth }} className="shrink-0">
+          <RightPanel />
         </div>
       </div>
-
-      <ResizeHandle onDrag={handleRightResize} />
-
-      {/* Right Panel - Status Panels (full height) */}
-      <div style={{ width: rightWidth }} className="shrink-0">
-        <RightPanel />
-      </div>
-    </div>
     </ThreadProvider>
   )
 }

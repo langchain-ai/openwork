@@ -1,136 +1,17 @@
-import {
-  createContext,
-  useContext,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-  useEffect,
-  useSyncExternalStore,
-  type ReactNode
-} from 'react'
+import { useCallback, useMemo, useRef, useState, useEffect, type ReactNode } from 'react'
 import { useStream } from '@langchain/langgraph-sdk/react'
-import { ElectronIPCTransport } from './electron-transport'
+import { ElectronIPCTransport } from '../electron-transport'
 import type { Message, Todo, FileInfo, Subagent, HITLRequest } from '@/types'
-import type { DeepAgent } from '../../../main/agent/types'
-
-// Open file tab type
-export interface OpenFile {
-  path: string
-  name: string
-}
-
-// Token usage tracking for context window monitoring
-export interface TokenUsage {
-  inputTokens: number
-  outputTokens: number
-  totalTokens: number
-  cacheReadTokens?: number
-  cacheCreationTokens?: number
-  lastUpdated: Date
-}
-
-// Per-thread state (persisted/restored from checkpoints)
-export interface ThreadState {
-  messages: Message[]
-  todos: Todo[]
-  workspaceFiles: FileInfo[]
-  workspacePath: string | null
-  subagents: Subagent[]
-  pendingApproval: HITLRequest | null
-  error: string | null
-  currentModel: string
-  openFiles: OpenFile[]
-  activeTab: 'agent' | string
-  fileContents: Record<string, string>
-  tokenUsage: TokenUsage | null
-}
-
-// Stream instance type
-type StreamInstance = ReturnType<typeof useStream<DeepAgent>>
-
-// Stream data that we want to be reactive
-interface StreamData {
-  messages: StreamInstance['messages']
-  isLoading: boolean
-  stream: StreamInstance | null
-}
-
-// Actions available on a thread
-export interface ThreadActions {
-  appendMessage: (message: Message) => void
-  setMessages: (messages: Message[]) => void
-  setTodos: (todos: Todo[]) => void
-  setWorkspaceFiles: (files: FileInfo[] | ((prev: FileInfo[]) => FileInfo[])) => void
-  setWorkspacePath: (path: string | null) => void
-  setSubagents: (subagents: Subagent[]) => void
-  setPendingApproval: (request: HITLRequest | null) => void
-  setError: (error: string | null) => void
-  clearError: () => void
-  setCurrentModel: (modelId: string) => void
-  openFile: (path: string, name: string) => void
-  closeFile: (path: string) => void
-  setActiveTab: (tab: 'agent' | string) => void
-  setFileContents: (path: string, content: string) => void
-}
-
-// Context value
-interface ThreadContextValue {
-  getThreadState: (threadId: string) => ThreadState
-  getThreadActions: (threadId: string) => ThreadActions
-  initializeThread: (threadId: string) => void
-  cleanupThread: (threadId: string) => void
-  // Stream subscription
-  subscribeToStream: (threadId: string, callback: () => void) => () => void
-  getStreamData: (threadId: string) => StreamData
-}
-
-// Default thread state
-const createDefaultThreadState = (): ThreadState => ({
-  messages: [],
-  todos: [],
-  workspaceFiles: [],
-  workspacePath: null,
-  subagents: [],
-  pendingApproval: null,
-  error: null,
-  currentModel: 'claude-sonnet-4-5-20250929',
-  openFiles: [],
-  activeTab: 'agent',
-  fileContents: {},
-  tokenUsage: null
-})
-
-const defaultStreamData: StreamData = {
-  messages: [],
-  isLoading: false,
-  stream: null
-}
-
-const ThreadContext = createContext<ThreadContextValue | null>(null)
-
-// Custom event types from the stream
-interface CustomEventData {
-  type?: string
-  request?: HITLRequest
-  files?: Array<{ path: string; is_dir?: boolean; size?: number }>
-  path?: string
-  subagents?: Array<{
-    id?: string
-    name?: string
-    description?: string
-    status?: string
-    startedAt?: Date
-    completedAt?: Date
-  }>
-  usage?: {
-    inputTokens?: number
-    outputTokens?: number
-    totalTokens?: number
-    cacheReadTokens?: number
-    cacheCreationTokens?: number
-  }
-}
+import type { DeepAgent } from '../../../../main/agent/types'
+import type {
+  ThreadState,
+  ThreadActions,
+  StreamData,
+  ThreadContextValue,
+  CustomEventData
+} from './types'
+import { createDefaultThreadState, defaultStreamData } from './types'
+import { ThreadContext } from './context'
 
 // Component that holds a stream and notifies subscribers
 function ThreadStreamHolder({
@@ -143,7 +24,7 @@ function ThreadStreamHolder({
   onStreamUpdate: (data: StreamData) => void
   onCustomEvent: (data: CustomEventData) => void
   onError: (error: Error) => void
-}) {
+}): null {
   const transport = useMemo(() => new ElectronIPCTransport(), [])
 
   // Use refs to avoid stale closures
@@ -209,7 +90,7 @@ function ThreadStreamHolder({
   return null
 }
 
-export function ThreadProvider({ children }: { children: ReactNode }) {
+export function ThreadProvider({ children }: { children: ReactNode }): React.JSX.Element {
   const [threadStates, setThreadStates] = useState<Record<string, ThreadState>>({})
   const [activeThreadIds, setActiveThreadIds] = useState<Set<string>>(new Set())
   const initializedThreadsRef = useRef<Set<string>>(new Set())
@@ -257,7 +138,11 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     (threadId: string): ThreadState => {
       const state = threadStates[threadId] || createDefaultThreadState()
       if (state.pendingApproval) {
-        console.log('[ThreadContext] getThreadState returning pendingApproval for:', threadId, state.pendingApproval)
+        console.log(
+          '[ThreadContext] getThreadState returning pendingApproval for:',
+          threadId,
+          state.pendingApproval
+        )
       }
       return state
     },
@@ -283,7 +168,9 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     const errorMessage = typeof error === 'string' ? error : error.message
 
     // Check for context window exceeded errors
-    const contextWindowMatch = errorMessage.match(/prompt is too long: (\d+) tokens > (\d+) maximum/i)
+    const contextWindowMatch = errorMessage.match(
+      /prompt is too long: (\d+) tokens > (\d+) maximum/i
+    )
     if (contextWindowMatch) {
       const [, usedTokens, maxTokens] = contextWindowMatch
       const usedK = Math.round(parseInt(usedTokens) / 1000)
@@ -297,7 +184,11 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
     }
 
     // Check for authentication errors
-    if (errorMessage.includes('401') || errorMessage.includes('invalid_api_key') || errorMessage.includes('authentication')) {
+    if (
+      errorMessage.includes('401') ||
+      errorMessage.includes('invalid_api_key') ||
+      errorMessage.includes('authentication')
+    ) {
       return 'Authentication failed. Please check your API key in settings.'
     }
 
@@ -322,7 +213,11 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       switch (data.type) {
         case 'interrupt':
           if (data.request) {
-            console.log('[ThreadContext] Setting pendingApproval for thread:', threadId, data.request)
+            console.log(
+              '[ThreadContext] Setting pendingApproval for thread:',
+              threadId,
+              data.request
+            )
             updateThreadState(threadId, () => ({ pendingApproval: data.request }))
           }
           break
@@ -449,7 +344,8 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
         closeFile: (path: string) => {
           updateThreadState(threadId, (state) => {
             const newOpenFiles = state.openFiles.filter((f) => f.path !== path)
-            const { [path]: _, ...newFileContents } = state.fileContents
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            const { [path]: _removed, ...newFileContents } = state.fileContents
             let newActiveTab = state.activeTab
             if (state.activeTab === path) {
               const closedIndex = state.openFiles.findIndex((f) => f.path === path)
@@ -457,7 +353,11 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
               else if (closedIndex > 0) newActiveTab = newOpenFiles[closedIndex - 1].path
               else newActiveTab = newOpenFiles[0].path
             }
-            return { openFiles: newOpenFiles, activeTab: newActiveTab, fileContents: newFileContents }
+            return {
+              openFiles: newOpenFiles,
+              activeTab: newActiveTab,
+              fileContents: newFileContents
+            }
           })
         },
         setActiveTab: (tab: 'agent' | string) => {
@@ -644,7 +544,8 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       return next
     })
     setThreadStates((prev) => {
-      const { [threadId]: _, ...rest } = prev
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { [threadId]: _removed, ...rest } = prev
       return rest
     })
   }, [])
@@ -658,7 +559,14 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       subscribeToStream,
       getStreamData
     }),
-    [getThreadState, getThreadActions, initializeThread, cleanupThread, subscribeToStream, getStreamData]
+    [
+      getThreadState,
+      getThreadActions,
+      initializeThread,
+      cleanupThread,
+      subscribeToStream,
+      getStreamData
+    ]
   )
 
   return (
@@ -676,54 +584,4 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
       {children}
     </ThreadContext.Provider>
   )
-}
-
-export function useThreadContext(): ThreadContextValue {
-  const context = useContext(ThreadContext)
-  if (!context) throw new Error('useThreadContext must be used within a ThreadProvider')
-  return context
-}
-
-// Hook to subscribe to stream data for a thread using useSyncExternalStore
-export function useThreadStream(threadId: string) {
-  const context = useThreadContext()
-
-  const subscribe = useCallback(
-    (callback: () => void) => context.subscribeToStream(threadId, callback),
-    [context, threadId]
-  )
-
-  const getSnapshot = useCallback(() => context.getStreamData(threadId), [context, threadId])
-
-  return useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
-}
-
-// Hook to access current thread's state and actions
-export function useCurrentThread(threadId: string) {
-  const context = useThreadContext()
-
-  useEffect(() => {
-    context.initializeThread(threadId)
-  }, [threadId, context])
-
-  const state = context.getThreadState(threadId)
-  const actions = context.getThreadActions(threadId)
-
-  return { ...state, ...actions }
-}
-
-// Hook for nullable threadId
-export function useThreadState(threadId: string | null) {
-  const context = useThreadContext()
-
-  useEffect(() => {
-    if (threadId) context.initializeThread(threadId)
-  }, [threadId, context])
-
-  if (!threadId) return null
-
-  const state = context.getThreadState(threadId)
-  const actions = context.getThreadActions(threadId)
-
-  return { ...state, ...actions }
 }
