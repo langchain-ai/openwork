@@ -1,23 +1,11 @@
 import { app, shell, BrowserWindow, ipcMain, nativeImage } from 'electron'
 import { join } from 'path'
-import { existsSync } from 'fs'
 import { registerAgentHandlers } from './ipc/agent'
 import { registerThreadHandlers } from './ipc/threads'
 import { registerModelHandlers } from './ipc/models'
 import { initializeDatabase } from './db'
 
 // Handle Docker environment specific flags
-if (process.env['IS_DOCKER']) {
-  app.commandLine.appendSwitch('no-sandbox')
-
-  // Check if a GPU is available (Linux/Docker)
-  const hasGPU = existsSync('/dev/dri') || existsSync('/dev/nvidia0')
-
-  if (!hasGPU) {
-    app.commandLine.appendSwitch('disable-gpu')
-    app.commandLine.appendSwitch('disable-software-rasterizer')
-  }
-}
 
 // Suppress expected errors from LangChain stream handlers when streams are aborted
 // These occur when the LLM is still generating but the stream has been closed
