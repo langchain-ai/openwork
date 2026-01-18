@@ -34,7 +34,7 @@ RUN npm install
 COPY . .
 
 # Fix permissions for the node user
-RUN chown -R node:node /app
+RUN chown -R node:node /app && chmod -R 775 /app/node_modules
 
 # Run as non-root user to avoid sandbox issues
 USER node
@@ -42,4 +42,5 @@ USER node
 # Expose default Vite port if needed, though Electron apps usually don't expose a web port externally by default
 EXPOSE 5173
 
-CMD ["npm", "run", "dev:docker"]
+# Use xvfb-run to provide a virtual display for Electron
+CMD ["xvfb-run", "-a", "npm", "run", "dev:docker"]
