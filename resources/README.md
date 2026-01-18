@@ -9,6 +9,7 @@ Place your app icon here:
 ## Creating an Icon
 
 You can create an icon using tools like:
+
 - [Figma](https://figma.com)
 - [IconKitchen](https://icon.kitchen)
 - [MakeAppIcon](https://makeappicon.com)

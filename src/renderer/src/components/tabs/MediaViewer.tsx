@@ -8,7 +8,12 @@ interface MediaViewerProps {
   mediaType: 'video' | 'audio'
 }
 
-export function MediaViewer({ filePath, base64Content, mimeType, mediaType }: MediaViewerProps) {
+export function MediaViewer({
+  filePath,
+  base64Content,
+  mimeType,
+  mediaType
+}: MediaViewerProps): React.ReactElement {
   const fileName = filePath.split('/').pop() || filePath
   const mediaUrl = `data:${mimeType};base64,${base64Content}`
 
@@ -47,11 +52,7 @@ export function MediaViewer({ filePath, base64Content, mimeType, mediaType }: Me
                   <div className="text-sm text-muted-foreground">Audio File</div>
                 </div>
               </div>
-              <audio
-                controls
-                className="w-full max-w-md"
-                preload="metadata"
-              >
+              <audio controls className="w-full max-w-md" preload="metadata">
                 <source src={mediaUrl} type={mimeType} />
                 Your browser does not support the audio tag.
               </audio>

@@ -8,7 +8,7 @@ interface TabbedPanelProps {
   showTabBar?: boolean
 }
 
-export function TabbedPanel({ threadId, showTabBar = true }: TabbedPanelProps) {
+export function TabbedPanel({ threadId, showTabBar = true }: TabbedPanelProps): React.ReactElement {
   const { activeTab, openFiles } = useAppStore()
 
   // Determine what to render based on active tab

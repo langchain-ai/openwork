@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import { Eye, EyeOff, Check, AlertCircle, Loader2 } from 'lucide-react'
+import { useState, useEffect, useCallback } from 'react'
+import { Check, Loader2, Settings, Plus, Pencil } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -8,208 +8,189 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import { ProviderConfigDialog } from '@/components/chat/ProviderConfigDialog'
+import { PROVIDER_REGISTRY } from '../../../../shared/providers'
+import type { ProviderId, SavedProviderConfig } from '@/types'
 
 interface SettingsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
-interface ProviderConfig {
-  id: string
-  name: string
-  envVar: string
-  placeholder: string
+// Get providers that require configuration (exclude ollama)
+const CONFIGURABLE_PROVIDERS = Object.values(PROVIDER_REGISTRY).filter((p) => p.requiresConfig)
+
+interface ProviderConfigState {
+  configs: SavedProviderConfig[]
+  activeConfigId: string | null
 }
 
-const PROVIDERS: ProviderConfig[] = [
-  {
-    id: 'anthropic',
-    name: 'Anthropic',
-    envVar: 'ANTHROPIC_API_KEY',
-    placeholder: 'sk-ant-...'
-  },
-  {
-    id: 'openai',
-    name: 'OpenAI',
-    envVar: 'OPENAI_API_KEY',
-    placeholder: 'sk-...'
-  },
-  {
-    id: 'google',
-    name: 'Google AI',
-    envVar: 'GOOGLE_API_KEY',
-    placeholder: 'AIza...'
-  }
-]
-
-export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
-  const [apiKeys, setApiKeys] = useState<Record<string, string>>({})
-  const [savedKeys, setSavedKeys] = useState<Record<string, boolean>>({})
-  const [showKeys, setShowKeys] = useState<Record<string, boolean>>({})
-  const [saving, setSaving] = useState<Record<string, boolean>>({})
+export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps): React.ReactElement {
+  const [providerStates, setProviderStates] = useState<Record<string, ProviderConfigState>>({})
   const [loading, setLoading] = useState(true)
+  const [configDialogOpen, setConfigDialogOpen] = useState(false)
+  const [configProviderId, setConfigProviderId] = useState<ProviderId | null>(null)
+  const [editingConfig, setEditingConfig] = useState<SavedProviderConfig | null>(null)
+
+  const loadAllProviderConfigs = useCallback(async (): Promise<void> => {
+    const states: Record<string, ProviderConfigState> = {}
+
+    for (const provider of CONFIGURABLE_PROVIDERS) {
+      try {
+        const configs = await window.api.models.listProviderConfigs(provider.id)
+        const activeConfig = await window.api.models.getActiveProviderConfigById(provider.id)
+        states[provider.id] = {
+          configs,
+          activeConfigId: activeConfig?.id || null
+        }
+      } catch {
+        states[provider.id] = { configs: [], activeConfigId: null }
+      }
+    }
+
+    setProviderStates(states)
+    setLoading(false)
+  }, [])
 
   // Load existing settings on mount
   useEffect(() => {
     if (open) {
-      loadApiKeys()
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Loading state before async fetch is a valid pattern
+      setLoading(true)
+      void loadAllProviderConfigs()
     }
-  }, [open])
+  }, [open, loadAllProviderConfigs])
 
-  async function loadApiKeys() {
-    setLoading(true)
-    const keys: Record<string, string> = {}
-    const saved: Record<string, boolean> = {}
-
-    for (const provider of PROVIDERS) {
-      try {
-        const key = await window.api.models.getApiKey(provider.id)
-        if (key) {
-          // Show masked version
-          keys[provider.id] = '••••••••••••••••'
-          saved[provider.id] = true
-        } else {
-          keys[provider.id] = ''
-          saved[provider.id] = false
-        }
-      } catch (e) {
-        keys[provider.id] = ''
-        saved[provider.id] = false
-      }
-    }
-
-    setApiKeys(keys)
-    setSavedKeys(saved)
-    setLoading(false)
+  function handleAddConfiguration(providerId: ProviderId): void {
+    setConfigProviderId(providerId)
+    setEditingConfig(null)
+    setConfigDialogOpen(true)
   }
 
-  async function saveApiKey(providerId: string) {
-    const key = apiKeys[providerId]
-    if (!key || key === '••••••••••••••••') return
-
-    setSaving((prev) => ({ ...prev, [providerId]: true }))
-
-    try {
-      await window.api.models.setApiKey(providerId, key)
-      setSavedKeys((prev) => ({ ...prev, [providerId]: true }))
-      setApiKeys((prev) => ({ ...prev, [providerId]: '••••••••••••••••' }))
-      setShowKeys((prev) => ({ ...prev, [providerId]: false }))
-    } catch (e) {
-      console.error('Failed to save API key:', e)
-    } finally {
-      setSaving((prev) => ({ ...prev, [providerId]: false }))
-    }
+  function handleEditConfiguration(providerId: ProviderId, config: SavedProviderConfig): void {
+    setConfigProviderId(providerId)
+    setEditingConfig(config)
+    setConfigDialogOpen(true)
   }
 
-  function handleKeyChange(providerId: string, value: string) {
-    // If user starts typing on a masked field, clear it
-    if (apiKeys[providerId] === '••••••••••••••••' && value.length > 16) {
-      value = value.slice(16)
+  function handleConfigDialogClose(isOpen: boolean): void {
+    setConfigDialogOpen(isOpen)
+    if (!isOpen) {
+      // Reload provider configs when dialog closes
+      loadAllProviderConfigs()
     }
-    setApiKeys((prev) => ({ ...prev, [providerId]: value }))
-    setSavedKeys((prev) => ({ ...prev, [providerId]: false }))
-  }
-
-  function toggleShowKey(providerId: string) {
-    setShowKeys((prev) => ({ ...prev, [providerId]: !prev[providerId] }))
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>
-            Configure API keys for model providers. Keys are stored securely on your device.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Settings</DialogTitle>
+            <DialogDescription>
+              Configure API keys for model providers. Keys are stored securely on your device.
+            </DialogDescription>
+          </DialogHeader>
 
-        <Separator />
+          <Separator />
 
-        <div className="space-y-6 py-2">
-          <div className="text-section-header">API KEYS</div>
+          <div className="space-y-6 py-2">
+            <div className="text-section-header">PROVIDERS</div>
 
-          {loading ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="size-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {PROVIDERS.map((provider) => (
-                <div key={provider.id} className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-sm font-medium">{provider.name}</label>
-                    {savedKeys[provider.id] ? (
-                      <span className="flex items-center gap-1 text-xs text-status-nominal">
-                        <Check className="size-3" />
-                        Configured
-                      </span>
-                    ) : apiKeys[provider.id] ? (
-                      <span className="flex items-center gap-1 text-xs text-status-warning">
-                        <AlertCircle className="size-3" />
-                        Unsaved
-                      </span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">Not set</span>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        type={showKeys[provider.id] ? 'text' : 'password'}
-                        value={apiKeys[provider.id] || ''}
-                        onChange={(e) => handleKeyChange(provider.id, e.target.value)}
-                        placeholder={provider.placeholder}
-                        className="pr-10"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => toggleShowKey(provider.id)}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-                      >
-                        {showKeys[provider.id] ? (
-                          <EyeOff className="size-4" />
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="size-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {CONFIGURABLE_PROVIDERS.map((provider) => {
+                  const state = providerStates[provider.id]
+                  const configCount = state?.configs.length || 0
+                  const hasConfigs = configCount > 0
+
+                  return (
+                    <div key={provider.id} className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-medium">{provider.name}</label>
+                        {hasConfigs ? (
+                          <span className="flex items-center gap-1 text-xs text-status-nominal">
+                            <Check className="size-3" />
+                            {configCount} configuration{configCount !== 1 ? 's' : ''}
+                          </span>
                         ) : (
-                          <Eye className="size-4" />
+                          <span className="text-xs text-muted-foreground">Not configured</span>
                         )}
-                      </button>
-                    </div>
-                    <Button
-                      variant={savedKeys[provider.id] ? 'outline' : 'default'}
-                      size="sm"
-                      onClick={() => saveApiKey(provider.id)}
-                      disabled={
-                        saving[provider.id] ||
-                        !apiKeys[provider.id] ||
-                        apiKeys[provider.id] === '••••••••••••••••'
-                      }
-                    >
-                      {saving[provider.id] ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        'Save'
+                      </div>
+
+                      {/* Show existing configs */}
+                      {hasConfigs && (
+                        <div className="space-y-1 pl-2 border-l-2 border-muted">
+                          {state.configs.map((config) => (
+                            <div
+                              key={config.id}
+                              className="flex items-center justify-between text-xs text-muted-foreground group"
+                            >
+                              <span className="flex items-center gap-1.5">
+                                {config.name}
+                                {state.activeConfigId === config.id && (
+                                  <span className="text-[10px] text-status-nominal">(active)</span>
+                                )}
+                              </span>
+                              <button
+                                onClick={() => handleEditConfiguration(provider.id, config)}
+                                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                              >
+                                <Pencil className="size-3" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
                       )}
-                    </Button>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Environment variable: <code className="text-foreground">{provider.envVar}</code>
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
-        <Separator />
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddConfiguration(provider.id)}
+                          className="flex items-center gap-2"
+                        >
+                          {hasConfigs ? (
+                            <>
+                              <Plus className="size-4" />
+                              Add Another
+                            </>
+                          ) : (
+                            <>
+                              <Settings className="size-4" />
+                              Configure
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
 
-        <div className="flex justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
-            Done
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          <Separator />
+
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Done
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ProviderConfigDialog
+        open={configDialogOpen}
+        onOpenChange={handleConfigDialogClose}
+        providerId={configProviderId}
+        editingConfig={editingConfig}
+      />
+    </>
   )
 }

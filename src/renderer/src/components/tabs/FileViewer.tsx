@@ -12,7 +12,7 @@ interface FileViewerProps {
   filePath: string
 }
 
-export function FileViewer({ filePath }: FileViewerProps) {
+export function FileViewer({ filePath }: FileViewerProps): React.ReactElement | null {
   const { currentThreadId, fileContents, setFileContents } = useAppStore()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -36,7 +36,7 @@ export function FileViewer({ filePath }: FileViewerProps) {
 
   // Load file content (text or binary depending on file type)
   useEffect(() => {
-    async function loadFile() {
+    async function loadFile(): Promise<void> {
       if (!currentThreadId) {
         setError('No thread selected')
         return
@@ -113,9 +113,9 @@ export function FileViewer({ filePath }: FileViewerProps) {
   // Route to appropriate viewer based on file type
   if (fileTypeInfo.type === 'image' && binaryContent) {
     return (
-      <ImageViewer 
-        filePath={filePath} 
-        base64Content={binaryContent} 
+      <ImageViewer
+        filePath={filePath}
+        base64Content={binaryContent}
         mimeType={fileTypeInfo.mimeType || 'image/png'}
       />
     )
@@ -123,9 +123,9 @@ export function FileViewer({ filePath }: FileViewerProps) {
 
   if (fileTypeInfo.type === 'video' && binaryContent) {
     return (
-      <MediaViewer 
-        filePath={filePath} 
-        base64Content={binaryContent} 
+      <MediaViewer
+        filePath={filePath}
+        base64Content={binaryContent}
         mimeType={fileTypeInfo.mimeType || 'video/mp4'}
         mediaType="video"
       />
@@ -134,9 +134,9 @@ export function FileViewer({ filePath }: FileViewerProps) {
 
   if (fileTypeInfo.type === 'audio' && binaryContent) {
     return (
-      <MediaViewer 
-        filePath={filePath} 
-        base64Content={binaryContent} 
+      <MediaViewer
+        filePath={filePath}
+        base64Content={binaryContent}
         mimeType={fileTypeInfo.mimeType || 'audio/mpeg'}
         mediaType="audio"
       />

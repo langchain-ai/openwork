@@ -2,6 +2,7 @@ import type { UseStreamTransport } from '@langchain/langgraph-sdk/react'
 import type { ToolCall, ToolCallChunk } from '@langchain/core/messages'
 import type { StreamPayload, StreamEvent, IPCEvent, IPCStreamEvent } from '../../../types'
 import type { Subagent } from '../types'
+import { useAppStore } from './store'
 
 /**
  * Serialized LangGraph message chunk.
@@ -82,7 +83,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
 
     // Check if this is a resume command (no message needed)
     const hasResumeCommand = payload.command?.resume !== undefined
-    
+
     // Extract the message content from input
     const input = payload.input as
       | { messages?: Array<{ content: string; type: string }> }
@@ -97,8 +98,17 @@ export class ElectronIPCTransport implements UseStreamTransport {
       return this.createErrorGenerator('MISSING_MESSAGE', 'Message content is required')
     }
 
+    // Get the current model from the store
+    const currentModel = useAppStore.getState().currentModel
+
     // Create an async generator that bridges IPC events
-    return this.createStreamGenerator(threadId, messageContent, payload.command, payload.signal)
+    return this.createStreamGenerator(
+      threadId,
+      messageContent,
+      payload.command,
+      payload.signal,
+      currentModel
+    )
   }
 
   private async *createErrorGenerator(code: string, message: string): AsyncGenerator<StreamEvent> {
@@ -112,7 +122,8 @@ export class ElectronIPCTransport implements UseStreamTransport {
     threadId: string,
     message: string,
     command: unknown,
-    signal: AbortSignal
+    signal: AbortSignal,
+    modelId: string | undefined
   ): AsyncGenerator<StreamEvent> {
     // Create a queue to buffer events from IPC
     const eventQueue: StreamEvent[] = []
@@ -133,27 +144,33 @@ export class ElectronIPCTransport implements UseStreamTransport {
     }
 
     // Start the stream via IPC
-    const cleanup = window.api.agent.streamAgent(threadId, message, command, (ipcEvent) => {
-      // Convert IPC events to SDK format
-      const sdkEvents = this.convertToSDKEvents(ipcEvent as IPCEvent, threadId)
+    const cleanup = window.api.agent.streamAgent(
+      threadId,
+      message,
+      command,
+      modelId,
+      (ipcEvent) => {
+        // Convert IPC events to SDK format
+        const sdkEvents = this.convertToSDKEvents(ipcEvent as IPCEvent, threadId)
 
-      for (const sdkEvent of sdkEvents) {
-        if (sdkEvent.event === 'done' || sdkEvent.event === 'error') {
-          isDone = true
-          hasError = sdkEvent.event === 'error'
-        }
+        for (const sdkEvent of sdkEvents) {
+          if (sdkEvent.event === 'done' || sdkEvent.event === 'error') {
+            isDone = true
+            hasError = sdkEvent.event === 'error'
+          }
 
-        // If someone is waiting for the next event, resolve immediately
-        if (resolveNext) {
-          const resolve = resolveNext
-          resolveNext = null
-          resolve(sdkEvent)
-        } else {
-          // Otherwise queue the event
-          eventQueue.push(sdkEvent)
+          // If someone is waiting for the next event, resolve immediately
+          if (resolveNext) {
+            const resolve = resolveNext
+            resolveNext = null
+            resolve(sdkEvent)
+          } else {
+            // Otherwise queue the event
+            eventQueue.push(sdkEvent)
+          }
         }
       }
-    })
+    )
 
     // Handle abort signal
     if (signal) {
@@ -311,7 +328,11 @@ export class ElectronIPCTransport implements UseStreamTransport {
                       name: firstAction.name,
                       args: firstAction.args || {}
                     },
-                    allowed_decisions: reviewConfig?.allowedDecisions || ['approve', 'reject', 'edit']
+                    allowed_decisions: reviewConfig?.allowedDecisions || [
+                      'approve',
+                      'reject',
+                      'edit'
+                    ]
                   }
                 }
               })
@@ -389,9 +410,9 @@ export class ElectronIPCTransport implements UseStreamTransport {
           events.push({
             event: 'messages',
             data: [
-              { 
-                id: msgId, 
-                type: 'ai', 
+              {
+                id: msgId,
+                type: 'ai',
                 content: content || '',
                 // Include tool_calls if present
                 ...(kwargs.tool_calls?.length && { tool_calls: kwargs.tool_calls })
@@ -420,7 +441,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
         if (kwargs.tool_calls?.length) {
           const subagentEvents = this.processCompletedToolCalls(kwargs.tool_calls)
           events.push(...subagentEvents)
-          
+
           // Track tool calls for HITL matching
           for (const tc of kwargs.tool_calls) {
             if (tc.id && tc.name) {
@@ -436,14 +457,14 @@ export class ElectronIPCTransport implements UseStreamTransport {
       if (isToolMessage && kwargs.tool_call_id) {
         const content = this.extractContent(kwargs.content)
         const msgId = kwargs.id || crypto.randomUUID()
-        
+
         // Emit tool message to the stream
         events.push({
           event: 'messages',
           data: [
-            { 
-              id: msgId, 
-              type: 'tool', 
+            {
+              id: msgId,
+              type: 'tool',
               content,
               tool_call_id: kwargs.tool_call_id,
               name: kwargs.name
@@ -451,7 +472,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
             { langgraph_node: metadata?.langgraph_node || 'tools' }
           ]
         })
-        
+
         // Handle subagent task completion
         if (kwargs.name === 'task') {
           const completionEvents = this.processToolMessage(kwargs.tool_call_id)
@@ -459,7 +480,6 @@ export class ElectronIPCTransport implements UseStreamTransport {
         }
       }
     } else if (mode === 'values') {
-
       // Values mode returns full state with serialized LangChain messages
       const state = data as {
         messages?: SerializedMessageChunk[]
@@ -557,7 +577,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
       if (state.workspacePath) {
         valuesData.workspacePath = state.workspacePath
       }
-      
+
       // Only emit if we have something to update
       if (Object.keys(valuesData).length > 0) {
         events.push({

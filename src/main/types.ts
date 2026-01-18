@@ -1,3 +1,6 @@
+// Re-export shared types
+export type { ProviderId, Provider, ModelConfig, AzureConfig } from '../shared/types'
+
 // Thread types matching langgraph-api
 export type ThreadStatus = 'idle' | 'busy' | 'interrupted' | 'error'
 
@@ -22,25 +25,6 @@ export interface Run {
   updated_at: Date
   status: RunStatus
   metadata?: Record<string, unknown>
-}
-
-// Provider configuration
-export type ProviderId = 'anthropic' | 'openai' | 'google' | 'ollama'
-
-export interface Provider {
-  id: ProviderId
-  name: string
-  hasApiKey: boolean
-}
-
-// Model configuration
-export interface ModelConfig {
-  id: string
-  name: string
-  provider: ProviderId
-  model: string
-  description?: string
-  available: boolean
 }
 
 // Subagent types (from deepagentsjs)

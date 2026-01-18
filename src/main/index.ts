@@ -4,6 +4,7 @@ import { registerAgentHandlers } from './ipc/agent'
 import { registerThreadHandlers } from './ipc/threads'
 import { registerModelHandlers } from './ipc/models'
 import { initializeDatabase } from './db'
+import { migrateEnvToJsonConfigs } from './storage'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -47,7 +48,10 @@ function createWindow(): void {
   })
 }
 
+console.log('[OpenWork] Main process starting...')
+
 app.whenReady().then(async () => {
+  console.log('[OpenWork] App is ready, initializing...')
   // Set app user model id for windows
   if (process.platform === 'win32') {
     app.setAppUserModelId(isDev ? process.execPath : 'com.langchain.openwork')
@@ -81,10 +85,42 @@ app.whenReady().then(async () => {
   // Initialize database
   await initializeDatabase()
 
+  // Migrate existing .env configs to JSON format (runs once)
+  migrateEnvToJsonConfigs()
+
   // Register IPC handlers
   registerAgentHandlers(ipcMain)
   registerThreadHandlers(ipcMain)
   registerModelHandlers(ipcMain)
+
+  // Debug: Log available models and configs on startup
+  console.log('\n========== OPENWORK STARTUP DEBUG ==========')
+  const { getAvailableModels } = await import('./ipc/models')
+  const { getProviderConfigs, hasProviderConfig } = await import('./storage')
+
+  const models = getAvailableModels()
+  console.log(`[OpenWork] Total available models: ${models.length}`)
+
+  // Group models by provider
+  const modelsByProvider: Record<string, string[]> = {}
+  for (const m of models) {
+    if (!modelsByProvider[m.provider]) modelsByProvider[m.provider] = []
+    modelsByProvider[m.provider].push(m.id)
+  }
+  console.log('[OpenWork] Models by provider:', modelsByProvider)
+
+  // Log provider configs
+  const providerIds = ['anthropic', 'openai', 'azure', 'google']
+  console.log('[OpenWork] Provider configuration status:')
+  for (const providerId of providerIds) {
+    const configs = getProviderConfigs(providerId)
+    const hasConfig = hasProviderConfig(providerId)
+    console.log(
+      `  ${providerId}: hasConfig=${hasConfig}, configs=${configs.length}`,
+      configs.length > 0 ? configs.map((c) => c.name) : ''
+    )
+  }
+  console.log('=============================================\n')
 
   createWindow()
 

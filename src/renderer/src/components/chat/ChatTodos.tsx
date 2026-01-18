@@ -29,8 +29,8 @@ export function ChatTodos({ todos }: ChatTodosProps): React.JSX.Element | null {
   if (todos.length === 0) return null
 
   // Separate active and completed todos
-  const activeTodos = todos.filter(t => t.status === 'in_progress' || t.status === 'pending')
-  const completedCount = todos.filter(t => t.status === 'completed').length
+  const activeTodos = todos.filter((t) => t.status === 'in_progress' || t.status === 'pending')
+  const completedCount = todos.filter((t) => t.status === 'completed').length
   const totalCount = todos.length
 
   // Calculate progress

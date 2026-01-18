@@ -17,7 +17,13 @@ interface MessageBubbleProps {
   onApprovalDecision?: (decision: 'approve' | 'reject' | 'edit') => void
 }
 
-export function MessageBubble({ message, isStreaming, toolResults, pendingApproval, onApprovalDecision }: MessageBubbleProps) {
+export function MessageBubble({
+  message,
+  isStreaming,
+  toolResults,
+  pendingApproval,
+  onApprovalDecision
+}: MessageBubbleProps): React.ReactElement | null {
   const isUser = message.role === 'user'
   const isTool = message.role === 'tool'
 
@@ -26,17 +32,17 @@ export function MessageBubble({ message, isStreaming, toolResults, pendingApprov
     return null
   }
 
-  const getIcon = () => {
+  const getIcon = (): React.ReactElement => {
     if (isUser) return <User className="size-4" />
     return <Bot className="size-4" />
   }
 
-  const getLabel = () => {
+  const getLabel = (): string => {
     if (isUser) return 'YOU'
     return 'AGENT'
   }
 
-  const renderContent = () => {
+  const renderContent = (): React.ReactNode => {
     if (typeof message.content === 'string') {
       // Empty content
       if (!message.content.trim()) {
@@ -45,38 +51,32 @@ export function MessageBubble({ message, isStreaming, toolResults, pendingApprov
 
       // Use streaming markdown for assistant messages, plain text for user messages
       if (isUser) {
-        return (
-          <div className="whitespace-pre-wrap text-sm">
-            {message.content}
-          </div>
-        )
+        return <div className="whitespace-pre-wrap text-sm">{message.content}</div>
       }
-      return (
-        <StreamingMarkdown isStreaming={isStreaming}>
-          {message.content}
-        </StreamingMarkdown>
-      )
+      return <StreamingMarkdown isStreaming={isStreaming}>{message.content}</StreamingMarkdown>
     }
 
     // Handle content blocks
-    const renderedBlocks = message.content.map((block, index) => {
-      if (block.type === 'text' && block.text) {
-        // Use streaming markdown for assistant text blocks
-        if (isUser) {
+    const renderedBlocks = message.content
+      .map((block, index) => {
+        if (block.type === 'text' && block.text) {
+          // Use streaming markdown for assistant text blocks
+          if (isUser) {
+            return (
+              <div key={index} className="whitespace-pre-wrap text-sm">
+                {block.text}
+              </div>
+            )
+          }
           return (
-            <div key={index} className="whitespace-pre-wrap text-sm">
+            <StreamingMarkdown key={index} isStreaming={isStreaming}>
               {block.text}
-            </div>
+            </StreamingMarkdown>
           )
         }
-        return (
-          <StreamingMarkdown key={index} isStreaming={isStreaming}>
-            {block.text}
-          </StreamingMarkdown>
-        )
-      }
-      return null
-    }).filter(Boolean)
+        return null
+      })
+      .filter(Boolean)
 
     return renderedBlocks.length > 0 ? renderedBlocks : null
   }
@@ -102,18 +102,12 @@ export function MessageBubble({ message, isStreaming, toolResults, pendingApprov
 
       {/* Content column - always same width */}
       <div className="flex-1 min-w-0 space-y-2 overflow-hidden">
-        <div className={cn(
-          "text-section-header",
-          isUser && "text-right"
-        )}>
-          {getLabel()}
-        </div>
+        <div className={cn('text-section-header', isUser && 'text-right')}>{getLabel()}</div>
 
         {content && (
-          <div className={cn(
-            "rounded-sm p-3 overflow-hidden",
-            isUser ? "bg-primary/10" : "bg-card"
-          )}>
+          <div
+            className={cn('rounded-sm p-3 overflow-hidden', isUser ? 'bg-primary/10' : 'bg-card')}
+          >
             {content}
           </div>
         )}

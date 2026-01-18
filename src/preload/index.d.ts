@@ -1,4 +1,12 @@
-import type { Thread, ModelConfig, StreamEvent, HITLDecision } from '../main/types'
+import type { Thread, ModelConfig, Provider, StreamEvent, HITLDecision } from '../main/types'
+import type {
+  SavedProviderConfig,
+  UserProvider,
+  ProviderApiType,
+  ProviderPresetType
+} from '../shared/types'
+
+type ProviderConfig = Record<string, string>
 
 interface ElectronAPI {
   ipcRenderer: {
@@ -15,16 +23,23 @@ interface ElectronAPI {
 
 interface CustomAPI {
   agent: {
-    invoke: (threadId: string, message: string, onEvent: (event: StreamEvent) => void) => () => void
+    invoke: (
+      threadId: string,
+      message: string,
+      modelId: string | undefined,
+      onEvent: (event: StreamEvent) => void
+    ) => () => void
     streamAgent: (
       threadId: string,
       message: string,
       command: unknown,
+      modelId: string | undefined,
       onEvent: (event: StreamEvent) => void
     ) => () => void
     interrupt: (
       threadId: string,
       decision: HITLDecision,
+      modelId: string | undefined,
       onEvent?: (event: StreamEvent) => void
     ) => () => void
     cancel: (threadId: string) => Promise<void>
@@ -42,10 +57,36 @@ interface CustomAPI {
     list: () => Promise<ModelConfig[]>
     listProviders: () => Promise<Provider[]>
     getDefault: () => Promise<string>
-    deleteApiKey: (provider: string) => Promise<void>
     setDefault: (modelId: string) => Promise<void>
-    setApiKey: (provider: string, apiKey: string) => Promise<void>
-    getApiKey: (provider: string) => Promise<string | null>
+    getProviderConfig: (providerId: string) => Promise<ProviderConfig | null>
+    setProviderConfig: (providerId: string, config: ProviderConfig) => Promise<void>
+    deleteProviderConfig: (providerId: string) => Promise<void>
+    // Multi-config methods
+    listProviderConfigs: (providerId: string) => Promise<SavedProviderConfig[]>
+    getActiveProviderConfigById: (providerId: string) => Promise<SavedProviderConfig | null>
+    saveProviderConfigById: (providerId: string, config: SavedProviderConfig) => Promise<void>
+    deleteProviderConfigById: (providerId: string, configId: string) => Promise<void>
+    setActiveProviderConfigId: (providerId: string, configId: string) => Promise<void>
+    // Model list methods
+    listByProvider: (providerId: string) => Promise<ModelConfig[]>
+    // User model methods
+    listUserModels: () => Promise<ModelConfig[]>
+    addUserModel: (model: Omit<ModelConfig, 'available'>) => Promise<ModelConfig>
+    updateUserModel: (modelId: string, updates: Partial<ModelConfig>) => Promise<ModelConfig | null>
+    deleteUserModel: (modelId: string) => Promise<boolean>
+  }
+  providers: {
+    listUserProviders: () => Promise<UserProvider[]>
+    addUserProvider: (
+      name: string,
+      apiType: ProviderApiType,
+      presetType: ProviderPresetType
+    ) => Promise<UserProvider>
+    updateUserProvider: (
+      providerId: string,
+      updates: Partial<UserProvider>
+    ) => Promise<UserProvider | null>
+    deleteUserProvider: (providerId: string) => Promise<boolean>
   }
   workspace: {
     get: (threadId?: string) => Promise<string | null>
@@ -62,14 +103,20 @@ interface CustomAPI {
       workspacePath?: string
       error?: string
     }>
-    readFile: (threadId: string, filePath: string) => Promise<{
+    readFile: (
+      threadId: string,
+      filePath: string
+    ) => Promise<{
       success: boolean
       content?: string
       size?: number
       modified_at?: string
       error?: string
     }>
-    readBinaryFile: (threadId: string, filePath: string) => Promise<{
+    readBinaryFile: (
+      threadId: string,
+      filePath: string
+    ) => Promise<{
       success: boolean
       content?: string
       size?: number

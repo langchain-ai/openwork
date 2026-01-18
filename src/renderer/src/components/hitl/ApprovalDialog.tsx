@@ -9,7 +9,7 @@ interface ApprovalDialogProps {
   request: HITLRequest
 }
 
-export function ApprovalDialog({ request }: ApprovalDialogProps) {
+export function ApprovalDialog({ request }: ApprovalDialogProps): React.ReactElement {
   const { respondToApproval } = useAppStore()
   const [isEditing, setIsEditing] = useState(false)
   const [isExpanded, setIsExpanded] = useState(true)
@@ -20,12 +20,12 @@ export function ApprovalDialog({ request }: ApprovalDialogProps) {
 
   const [editedArgs, setEditedArgs] = useState(JSON.stringify(args, null, 2))
 
-  const handleApprove = async () => {
+  const handleApprove = async (): Promise<void> => {
     if (isEditing) {
       try {
         const parsed = JSON.parse(editedArgs)
         await respondToApproval('edit', parsed)
-      } catch (e) {
+      } catch {
         // Invalid JSON, show error
         return
       }
@@ -34,12 +34,12 @@ export function ApprovalDialog({ request }: ApprovalDialogProps) {
     }
   }
 
-  const handleReject = async () => {
+  const handleReject = async (): Promise<void> => {
     await respondToApproval('reject')
   }
 
   // Get a preview of the command for execute tool
-  const getCommandPreview = () => {
+  const getCommandPreview = (): string | null => {
     if (toolCall.name === 'execute' && args.command) {
       const cmd = String(args.command)
       return cmd.length > 60 ? cmd.substring(0, 60) + '...' : cmd

@@ -4,7 +4,34 @@ import * as fs from 'fs/promises'
 import * as path from 'path'
 import type { ModelConfig, Provider } from '../types'
 import { startWatching, stopWatching } from '../services/workspace-watcher'
-import { getOpenworkDir, getApiKey, setApiKey, deleteApiKey, hasApiKey } from '../storage'
+import {
+  getOpenworkDir,
+  getProviderConfig,
+  setProviderConfig,
+  deleteProviderConfig,
+  hasProviderConfig,
+  getProviderConfigs,
+  getActiveProviderConfig,
+  saveProviderConfig,
+  deleteProviderConfigById,
+  setActiveProviderConfigId,
+  getUserModels,
+  addUserModel,
+  updateUserModel,
+  deleteUserModel,
+  getUserProviders,
+  addUserProvider,
+  updateUserProvider,
+  deleteUserProvider,
+  type ProviderConfig
+} from '../storage'
+import type {
+  SavedProviderConfig,
+  UserProvider,
+  ProviderApiType,
+  ProviderPresetType
+} from '../../shared/types'
+import { PROVIDER_REGISTRY, isBuiltInProvider } from '../../shared/providers'
 
 // Store for non-sensitive settings only (no encryption needed)
 const store = new Store({
@@ -13,7 +40,8 @@ const store = new Store({
 })
 
 // Provider configurations
-const PROVIDERS: Omit<Provider, 'hasApiKey'>[] = [
+// Note: modelSelection is added dynamically from PROVIDER_REGISTRY in listProviders handler
+const PROVIDERS: Omit<Provider, 'hasApiKey' | 'modelSelection'>[] = [
   { id: 'anthropic', name: 'Anthropic' },
   { id: 'openai', name: 'OpenAI' },
   { id: 'google', name: 'Google' }
@@ -189,14 +217,73 @@ const AVAILABLE_MODELS: ModelConfig[] = [
   }
 ]
 
+/**
+ * Get all models (default + user-added) merged together.
+ * User models override default models with the same ID.
+ */
+function getAllModels(): ModelConfig[] {
+  const defaultModels = [...AVAILABLE_MODELS]
+  const userModels = getUserModels()
+
+  // Create a map for efficient lookup
+  const modelMap = new Map<string, ModelConfig>()
+
+  // Add default models first
+  for (const model of defaultModels) {
+    modelMap.set(model.id, model)
+  }
+
+  // User models override defaults with same ID, or add new ones
+  for (const model of userModels) {
+    modelMap.set(model.id, model)
+  }
+
+  return Array.from(modelMap.values())
+}
+
+/**
+ * Get models for a specific provider.
+ * For 'multi' providers: returns models from AVAILABLE_MODELS + user models
+ * For 'deployment' providers: returns nothing (configs ARE the models)
+ */
+function getModelsForProvider(providerId: string): ModelConfig[] {
+  // Check if it's a built-in provider
+  if (isBuiltInProvider(providerId)) {
+    const provider = PROVIDER_REGISTRY[providerId]
+    // For deployment-based providers, configs are the models - no dropdown needed
+    if (provider.modelSelection === 'deployment') {
+      return []
+    }
+    // For multi-model providers, return all models for this provider
+    return getAllModels().filter((m) => m.provider === providerId)
+  }
+
+  // Custom providers are always deployment-based, so return empty
+  return []
+}
+
 export function registerModelHandlers(ipcMain: IpcMain): void {
-  // List available models
+  console.log('[IPC] Registering model handlers')
+
+  // List all available models (default + user-added)
   ipcMain.handle('models:list', async () => {
-    // Check which models have API keys configured
-    return AVAILABLE_MODELS.map((model) => ({
+    const allModels = getAllModels()
+    console.log('[IPC] models:list called, returning', allModels.length, 'models')
+    // Merge default and user models, check availability
+    return allModels.map((model) => ({
       ...model,
-      available: hasApiKey(model.provider)
+      available: hasProviderConfig(model.provider)
     }))
+  })
+
+  // List models for a specific provider (for dropdown)
+  ipcMain.handle('models:listByProvider', async (_event, providerId: string) => {
+    const models = getModelsForProvider(providerId).map((model) => ({
+      ...model,
+      available: hasProviderConfig(model.provider)
+    }))
+    console.log(`[IPC] models:listByProvider(${providerId}):`, models.length, 'models')
+    return models
   })
 
   // Get default model
@@ -209,30 +296,167 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     store.set('defaultModel', modelId)
   })
 
-  // Set API key for a provider (stored in ~/.openwork/.env)
+  // List providers with their configuration status and model selection type
+  ipcMain.handle('models:listProviders', async () => {
+    // Get built-in providers
+    const builtInProviders = PROVIDERS.map((provider) => {
+      const registry = PROVIDER_REGISTRY[provider.id as keyof typeof PROVIDER_REGISTRY]
+      const hasKey = hasProviderConfig(provider.id)
+      return {
+        ...provider,
+        hasApiKey: hasKey,
+        modelSelection: registry?.modelSelection || 'multi',
+        isCustom: false
+      }
+    })
+
+    // Get custom providers
+    const customProviders = getUserProviders().map((userProvider) => ({
+      id: userProvider.id,
+      name: userProvider.name,
+      hasApiKey: hasProviderConfig(userProvider.id),
+      modelSelection: 'deployment' as const, // Custom providers are always deployment-based
+      isCustom: true,
+      apiType: userProvider.apiType,
+      presetType: userProvider.presetType || 'api'
+    }))
+
+    const result = [...builtInProviders, ...customProviders]
+    console.log(
+      '[IPC] models:listProviders:',
+      result.map((p) => ({ id: p.id, hasApiKey: p.hasApiKey, isCustom: p.isCustom }))
+    )
+    return result
+  })
+
+  // Unified provider config handlers
+  ipcMain.handle('models:getProviderConfig', async (_event, providerId: string) => {
+    return getProviderConfig(providerId) ?? null
+  })
+
   ipcMain.handle(
-    'models:setApiKey',
-    async (_event, { provider, apiKey }: { provider: string; apiKey: string }) => {
-      setApiKey(provider, apiKey)
+    'models:setProviderConfig',
+    async (_event, { providerId, config }: { providerId: string; config: ProviderConfig }) => {
+      setProviderConfig(providerId, config)
     }
   )
 
-  // Get API key for a provider (from ~/.openwork/.env or process.env)
-  ipcMain.handle('models:getApiKey', async (_event, provider: string) => {
-    return getApiKey(provider) ?? null
+  ipcMain.handle('models:deleteProviderConfig', async (_event, providerId: string) => {
+    deleteProviderConfig(providerId)
   })
 
-  // Delete API key for a provider
-  ipcMain.handle('models:deleteApiKey', async (_event, provider: string) => {
-    deleteApiKey(provider)
+  // ==========================================================================
+  // Multi-config handlers
+  // ==========================================================================
+
+  // List all saved configs for a provider
+  ipcMain.handle('models:listProviderConfigs', async (_event, providerId: string) => {
+    console.log(`[IPC] models:listProviderConfigs called with providerId: ${providerId}`)
+    const configs = getProviderConfigs(providerId)
+    console.log(
+      `[IPC] models:listProviderConfigs(${providerId}): returning ${configs.length} configs:`,
+      configs.map((c) => ({ id: c.id, name: c.name }))
+    )
+    return configs
   })
 
-  // List providers with their API key status
-  ipcMain.handle('models:listProviders', async () => {
-    return PROVIDERS.map((provider) => ({
-      ...provider,
-      hasApiKey: hasApiKey(provider.id)
-    }))
+  // Get active config for a provider
+  ipcMain.handle('models:getActiveProviderConfig', async (_event, providerId: string) => {
+    return getActiveProviderConfig(providerId) ?? null
+  })
+
+  // Save a config (create new or update existing)
+  ipcMain.handle(
+    'models:saveProviderConfig',
+    async (_event, { providerId, config }: { providerId: string; config: SavedProviderConfig }) => {
+      saveProviderConfig(providerId, config)
+    }
+  )
+
+  // Delete a specific config by ID
+  ipcMain.handle(
+    'models:deleteProviderConfigById',
+    async (_event, { providerId, configId }: { providerId: string; configId: string }) => {
+      deleteProviderConfigById(providerId, configId)
+    }
+  )
+
+  // Set active config
+  ipcMain.handle(
+    'models:setActiveProviderConfigId',
+    async (_event, { providerId, configId }: { providerId: string; configId: string }) => {
+      setActiveProviderConfigId(providerId, configId)
+    }
+  )
+
+  // ==========================================================================
+  // User Model handlers (for adding custom models to the dropdown)
+  // ==========================================================================
+
+  // List user-added models
+  ipcMain.handle('models:listUserModels', async () => {
+    return getUserModels()
+  })
+
+  // Add a new user model
+  ipcMain.handle('models:addUserModel', async (_event, model: Omit<ModelConfig, 'available'>) => {
+    return addUserModel(model)
+  })
+
+  // Update an existing user model
+  ipcMain.handle(
+    'models:updateUserModel',
+    async (_event, { modelId, updates }: { modelId: string; updates: Partial<ModelConfig> }) => {
+      return updateUserModel(modelId, updates)
+    }
+  )
+
+  // Delete a user model
+  ipcMain.handle('models:deleteUserModel', async (_event, modelId: string) => {
+    return deleteUserModel(modelId)
+  })
+
+  // ==========================================================================
+  // User Provider handlers (for custom providers)
+  // ==========================================================================
+
+  // List all user-created providers
+  ipcMain.handle('providers:listUserProviders', async () => {
+    return getUserProviders()
+  })
+
+  // Add a new user provider
+  ipcMain.handle(
+    'providers:addUserProvider',
+    async (
+      _event,
+      {
+        name,
+        apiType,
+        presetType
+      }: { name: string; apiType: ProviderApiType; presetType: ProviderPresetType }
+    ) => {
+      console.log('[IPC] providers:addUserProvider called with:', { name, apiType, presetType })
+      const result = addUserProvider(name, apiType, presetType)
+      console.log('[IPC] providers:addUserProvider result:', result)
+      return result
+    }
+  )
+
+  // Update an existing user provider
+  ipcMain.handle(
+    'providers:updateUserProvider',
+    async (
+      _event,
+      { providerId, updates }: { providerId: string; updates: Partial<UserProvider> }
+    ) => {
+      return updateUserProvider(providerId, updates)
+    }
+  )
+
+  // Delete a user provider
+  ipcMain.handle('providers:deleteUserProvider', async (_event, providerId: string) => {
+    return deleteUserProvider(providerId)
   })
 
   // Sync version info
@@ -508,4 +732,23 @@ export { getApiKey } from '../storage'
 
 export function getDefaultModel(): string {
   return store.get('defaultModel', 'claude-sonnet-4-5-20250929') as string
+}
+
+/**
+ * Look up a ModelConfig by its ID.
+ * Searches both default models and user-added models.
+ *
+ * This should be used by the runtime to get the actual API model name
+ * from ModelConfig.model, rather than using the ID directly.
+ */
+export function getModelConfigById(modelId: string): ModelConfig | null {
+  return getAllModels().find((m) => m.id === modelId) || null
+}
+
+/**
+ * Get the list of all available models (default + user-added).
+ * Used by the runtime to validate and look up model configurations.
+ */
+export function getAvailableModels(): ModelConfig[] {
+  return getAllModels()
 }

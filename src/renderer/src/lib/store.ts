@@ -44,7 +44,10 @@ interface AppState {
   // Subagents (from agent)
   subagents: Subagent[]
 
-  // Loading state - which thread is currently streaming
+  // Loading state - which thread is currently streaming an AI response.
+  // Set by ChatContainer based on useStream's isLoading state.
+  // Used to block model switching during active agent runs.
+  // See ModelSwitcher.tsx for detailed documentation on what this covers.
   loadingThreadId: string | null
 
   // Error state - errors by thread ID
@@ -54,6 +57,8 @@ interface AppState {
   models: ModelConfig[]
   providers: Provider[]
   currentModel: string
+  modelsLoading: boolean // True while initially loading models
+  providersLoading: boolean // True while initially loading providers
 
   // Right panel state
   rightPanelTab: 'todos' | 'files' | 'subagents'
@@ -112,8 +117,6 @@ interface AppState {
   loadModels: () => Promise<void>
   loadProviders: () => Promise<void>
   setCurrentModel: (modelId: string) => Promise<void>
-  setApiKey: (providerId: string, apiKey: string) => Promise<void>
-  deleteApiKey: (providerId: string) => Promise<void>
 
   // Panel actions
   setRightPanelTab: (tab: 'todos' | 'files' | 'subagents') => void
@@ -147,6 +150,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   models: [],
   providers: [],
   currentModel: 'claude-sonnet-4-5-20250929',
+  modelsLoading: true, // Start as loading until first fetch completes
+  providersLoading: true, // Start as loading until first fetch completes
   rightPanelTab: 'todos',
   settingsOpen: false,
   sidebarCollapsed: false,
@@ -364,6 +369,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
         // Remove tab state for deleted thread
         const { [threadId]: _, ...remainingTabState } = state.tabStateByThread
+        void _
 
         // If we're switching to a new thread, restore its tab state
         const newThreadTabState = newCurrentId ? remainingTabState[newCurrentId] : null
@@ -380,9 +386,11 @@ export const useAppStore = create<AppState>((set, get) => ({
           subagents: wasCurrentThread ? [] : state.subagents,
           // Clean up tab state for deleted thread and restore new thread's tab state if switching
           tabStateByThread: remainingTabState,
-          openFiles: wasCurrentThread ? (newThreadTabState?.openFiles || []) : state.openFiles,
-          activeTab: wasCurrentThread ? (newThreadTabState?.activeTab || 'agent') : state.activeTab,
-          fileContents: wasCurrentThread ? (newThreadTabState?.fileContents || {}) : state.fileContents
+          openFiles: wasCurrentThread ? newThreadTabState?.openFiles || [] : state.openFiles,
+          activeTab: wasCurrentThread ? newThreadTabState?.activeTab || 'agent' : state.activeTab,
+          fileContents: wasCurrentThread
+            ? newThreadTabState?.fileContents || {}
+            : state.fileContents
         }
       })
     } catch (error) {
@@ -432,7 +440,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     decision: 'approve' | 'reject' | 'edit',
     editedArgs?: Record<string, unknown>
   ) => {
-    const { currentThreadId, pendingApproval } = get()
+    const { currentThreadId, pendingApproval, currentModel } = get()
     if (!currentThreadId || !pendingApproval) return
 
     // Clear pending approval immediately so UI updates
@@ -445,7 +453,8 @@ export const useAppStore = create<AppState>((set, get) => ({
         type: decision,
         tool_call_id: pendingApproval.tool_call.id,
         edited_args: editedArgs
-      }
+      },
+      currentModel
       // Note: We don't pass onEvent here - the useStream hook in ChatContainer
       // will pick up the stream events on the same channel
     )
@@ -488,48 +497,47 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   clearThreadError: (threadId: string) => {
     set((state) => {
-      const { [threadId]: _, ...rest } = state.errorByThread
+      const { [threadId]: _removed, ...rest } = state.errorByThread
+      void _removed
       return { errorByThread: rest }
     })
   },
 
   // Model actions
   loadModels: async () => {
-    const models = await window.api.models.list()
-    const currentModel = await window.api.models.getDefault()
-    set({ models, currentModel })
+    console.log('[Store] Loading models...')
+    try {
+      const models = await window.api.models.list()
+      const currentModel = await window.api.models.getDefault()
+      console.log('[Store] Loaded models:', models.length, 'current:', currentModel)
+      set({ models, currentModel, modelsLoading: false })
+    } catch (e) {
+      console.error('[Store] Failed to load models:', e)
+      set({ modelsLoading: false })
+    }
   },
 
   loadProviders: async () => {
-    const providers = await window.api.models.listProviders()
-    set({ providers })
+    console.log('[Store] Loading providers...')
+    try {
+      const providers = await window.api.models.listProviders()
+      const configured = providers.filter((p) => p.hasApiKey)
+      console.log(
+        '[Store] Loaded providers:',
+        providers.length,
+        'configured:',
+        configured.map((p) => p.id)
+      )
+      set({ providers, providersLoading: false })
+    } catch (e) {
+      console.error('[Store] Failed to load providers:', e)
+      set({ providersLoading: false })
+    }
   },
 
   setCurrentModel: async (modelId: string) => {
     await window.api.models.setDefault(modelId)
     set({ currentModel: modelId })
-  },
-
-  setApiKey: async (providerId: string, apiKey: string) => {
-    console.log('[Store] setApiKey called:', { providerId, keyLength: apiKey.length })
-    try {
-      await window.api.models.setApiKey(providerId, apiKey)
-      console.log('[Store] API key saved via IPC')
-      // Reload providers and models to update availability
-      await get().loadProviders()
-      await get().loadModels()
-      console.log('[Store] Providers and models reloaded')
-    } catch (e) {
-      console.error('[Store] Failed to set API key:', e)
-      throw e
-    }
-  },
-
-  deleteApiKey: async (providerId: string) => {
-    await window.api.models.deleteApiKey(providerId)
-    // Reload providers and models to update availability
-    await get().loadProviders()
-    await get().loadModels()
   },
 
   // Panel actions
@@ -572,7 +580,8 @@ export const useAppStore = create<AppState>((set, get) => ({
     set((state) => {
       const newOpenFiles = state.openFiles.filter((f) => f.path !== path)
       // Remove from content cache
-      const { [path]: _, ...newFileContents } = state.fileContents
+      const { [path]: _removed, ...newFileContents } = state.fileContents
+      void _removed
 
       // If closing the active tab, switch to agent or the previous file
       let newActiveTab = state.activeTab

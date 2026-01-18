@@ -1,5 +1,13 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import type { Thread, ModelConfig, Provider, StreamEvent, HITLDecision } from '../main/types'
+import type {
+  SavedProviderConfig,
+  UserProvider,
+  ProviderApiType,
+  ProviderPresetType
+} from '../shared/types'
+
+type ProviderConfig = Record<string, string>
 
 // Simple electron API - replaces @electron-toolkit/preload
 const electronAPI = {
@@ -27,6 +35,7 @@ const api = {
     invoke: (
       threadId: string,
       message: string,
+      modelId: string | undefined,
       onEvent: (event: StreamEvent) => void
     ): (() => void) => {
       const channel = `agent:stream:${threadId}`
@@ -39,7 +48,7 @@ const api = {
       }
 
       ipcRenderer.on(channel, handler)
-      ipcRenderer.send('agent:invoke', { threadId, message })
+      ipcRenderer.send('agent:invoke', { threadId, message, modelId })
 
       // Return cleanup function
       return () => {
@@ -51,6 +60,7 @@ const api = {
       threadId: string,
       message: string,
       command: unknown,
+      modelId: string | undefined,
       onEvent: (event: StreamEvent) => void
     ): (() => void) => {
       const channel = `agent:stream:${threadId}`
@@ -66,9 +76,9 @@ const api = {
 
       // If we have a command, it might be a resume/retry
       if (command) {
-        ipcRenderer.send('agent:resume', { threadId, command })
+        ipcRenderer.send('agent:resume', { threadId, command, modelId })
       } else {
-        ipcRenderer.send('agent:invoke', { threadId, message })
+        ipcRenderer.send('agent:invoke', { threadId, message, modelId })
       }
 
       // Return cleanup function
@@ -79,6 +89,7 @@ const api = {
     interrupt: (
       threadId: string,
       decision: HITLDecision,
+      modelId: string | undefined,
       onEvent?: (event: StreamEvent) => void
     ): (() => void) => {
       const channel = `agent:stream:${threadId}`
@@ -91,7 +102,7 @@ const api = {
       }
 
       ipcRenderer.on(channel, handler)
-      ipcRenderer.send('agent:interrupt', { threadId, decision })
+      ipcRenderer.send('agent:interrupt', { threadId, decision, modelId })
 
       // Return cleanup function
       return () => {
@@ -138,14 +149,71 @@ const api = {
     setDefault: (modelId: string): Promise<void> => {
       return ipcRenderer.invoke('models:setDefault', modelId)
     },
-    setApiKey: (provider: string, apiKey: string): Promise<void> => {
-      return ipcRenderer.invoke('models:setApiKey', { provider, apiKey })
+    getProviderConfig: (providerId: string): Promise<ProviderConfig | null> => {
+      return ipcRenderer.invoke('models:getProviderConfig', providerId)
     },
-    getApiKey: (provider: string): Promise<string | null> => {
-      return ipcRenderer.invoke('models:getApiKey', provider)
+    setProviderConfig: (providerId: string, config: ProviderConfig): Promise<void> => {
+      return ipcRenderer.invoke('models:setProviderConfig', { providerId, config })
     },
-    deleteApiKey: (provider: string): Promise<void> => {
-      return ipcRenderer.invoke('models:deleteApiKey', provider)
+    deleteProviderConfig: (providerId: string): Promise<void> => {
+      return ipcRenderer.invoke('models:deleteProviderConfig', providerId)
+    },
+    // Multi-config methods
+    listProviderConfigs: (providerId: string): Promise<SavedProviderConfig[]> => {
+      return ipcRenderer.invoke('models:listProviderConfigs', providerId)
+    },
+    getActiveProviderConfigById: (providerId: string): Promise<SavedProviderConfig | null> => {
+      return ipcRenderer.invoke('models:getActiveProviderConfig', providerId)
+    },
+    saveProviderConfigById: (providerId: string, config: SavedProviderConfig): Promise<void> => {
+      return ipcRenderer.invoke('models:saveProviderConfig', { providerId, config })
+    },
+    deleteProviderConfigById: (providerId: string, configId: string): Promise<void> => {
+      return ipcRenderer.invoke('models:deleteProviderConfigById', { providerId, configId })
+    },
+    setActiveProviderConfigId: (providerId: string, configId: string): Promise<void> => {
+      return ipcRenderer.invoke('models:setActiveProviderConfigId', { providerId, configId })
+    },
+    // Model list methods
+    listByProvider: (providerId: string): Promise<ModelConfig[]> => {
+      return ipcRenderer.invoke('models:listByProvider', providerId)
+    },
+    // User model methods
+    listUserModels: (): Promise<ModelConfig[]> => {
+      return ipcRenderer.invoke('models:listUserModels')
+    },
+    addUserModel: (model: Omit<ModelConfig, 'available'>): Promise<ModelConfig> => {
+      return ipcRenderer.invoke('models:addUserModel', model)
+    },
+    updateUserModel: (
+      modelId: string,
+      updates: Partial<ModelConfig>
+    ): Promise<ModelConfig | null> => {
+      return ipcRenderer.invoke('models:updateUserModel', { modelId, updates })
+    },
+    deleteUserModel: (modelId: string): Promise<boolean> => {
+      return ipcRenderer.invoke('models:deleteUserModel', modelId)
+    }
+  },
+  providers: {
+    listUserProviders: (): Promise<UserProvider[]> => {
+      return ipcRenderer.invoke('providers:listUserProviders')
+    },
+    addUserProvider: (
+      name: string,
+      apiType: ProviderApiType,
+      presetType: ProviderPresetType
+    ): Promise<UserProvider> => {
+      return ipcRenderer.invoke('providers:addUserProvider', { name, apiType, presetType })
+    },
+    updateUserProvider: (
+      providerId: string,
+      updates: Partial<UserProvider>
+    ): Promise<UserProvider | null> => {
+      return ipcRenderer.invoke('providers:updateUserProvider', { providerId, updates })
+    },
+    deleteUserProvider: (providerId: string): Promise<boolean> => {
+      return ipcRenderer.invoke('providers:deleteUserProvider', providerId)
     }
   },
   workspace: {
@@ -158,7 +226,9 @@ const api = {
     select: (threadId?: string): Promise<string | null> => {
       return ipcRenderer.invoke('workspace:select', threadId)
     },
-    loadFromDisk: (threadId: string): Promise<{
+    loadFromDisk: (
+      threadId: string
+    ): Promise<{
       success: boolean
       files: Array<{
         path: string
@@ -171,7 +241,10 @@ const api = {
     }> => {
       return ipcRenderer.invoke('workspace:loadFromDisk', { threadId })
     },
-    readFile: (threadId: string, filePath: string): Promise<{
+    readFile: (
+      threadId: string,
+      filePath: string
+    ): Promise<{
       success: boolean
       content?: string
       size?: number
@@ -180,7 +253,10 @@ const api = {
     }> => {
       return ipcRenderer.invoke('workspace:readFile', { threadId, filePath })
     },
-    readBinaryFile: (threadId: string, filePath: string): Promise<{
+    readBinaryFile: (
+      threadId: string,
+      filePath: string
+    ): Promise<{
       success: boolean
       content?: string
       size?: number

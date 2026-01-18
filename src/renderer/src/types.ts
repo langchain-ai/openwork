@@ -1,4 +1,19 @@
-// Re-export types from electron for use in renderer
+// Re-export shared types
+export type {
+  BuiltInProviderId,
+  ProviderId,
+  Provider,
+  ModelConfig,
+  ModelSelectionType,
+  ProviderApiType,
+  ProviderPresetType,
+  AzureConfig,
+  SavedProviderConfig,
+  ProviderConfigs,
+  UserProvider
+} from '../../shared/types'
+
+// Thread types
 export type ThreadStatus = 'idle' | 'busy' | 'interrupted' | 'error'
 
 export interface Thread {
@@ -21,24 +36,6 @@ export interface Run {
   updated_at: Date
   status: RunStatus
   metadata?: Record<string, unknown>
-}
-
-// Provider configuration
-export type ProviderId = 'anthropic' | 'openai' | 'google' | 'ollama'
-
-export interface Provider {
-  id: ProviderId
-  name: string
-  hasApiKey: boolean
-}
-
-export interface ModelConfig {
-  id: string
-  name: string
-  provider: ProviderId
-  model: string
-  description?: string
-  available: boolean
 }
 
 // Subagent types (from deepagentsjs)

@@ -3,11 +3,12 @@ import { readFileSync, copyFileSync, existsSync, mkdirSync } from 'fs'
 import { defineConfig } from 'electron-vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import type { Plugin } from 'vite'
 
 const pkg = JSON.parse(readFileSync('./package.json', 'utf-8'))
 
 // Plugin to copy resources to output
-function copyResources() {
+function copyResources(): Plugin {
   return {
     name: 'copy-resources',
     closeBundle() {

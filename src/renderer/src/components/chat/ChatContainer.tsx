@@ -70,6 +70,9 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
     todos,
     errorByThread,
     workspacePath,
+    models,
+    providers,
+    currentModel,
     setTodos,
     setWorkspaceFiles,
     setWorkspacePath,
@@ -82,6 +85,27 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
     setThreadError,
     clearThreadError
   } = useAppStore()
+
+  // Check if we have a valid, usable model configured
+  // Use models.length === 0 as a proxy for "still loading" to avoid subscribing to modelsLoading
+  const isInitialLoad = models.length === 0 && providers.length === 0
+
+  // Check for custom provider deployment format: {providerId}:deployment
+  const isCustomDeployment = currentModel?.endsWith(':deployment')
+  const customProviderId = isCustomDeployment ? currentModel.replace(':deployment', '') : null
+  const customProvider = customProviderId ? providers.find((p) => p.id === customProviderId) : null
+
+  const selectedModel = models.find((m) => m.id === currentModel)
+  const currentModelProvider = selectedModel
+    ? providers.find((p) => p.id === selectedModel.provider)
+    : customProvider
+
+  // While loading, assume we might have a valid model (prevents flash)
+  // Valid if: regular model with API key OR custom deployment with API key
+  const hasValidModel =
+    isInitialLoad ||
+    !!(selectedModel && currentModelProvider?.hasApiKey) ||
+    !!(customProvider && customProvider.hasApiKey)
 
   // Get error for current thread
   const threadError = errorByThread[threadId] || null
@@ -178,22 +202,25 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
   })
 
   // Handle approval decision - use stream.submit with resume command
-  const handleApprovalDecision = useCallback(async (decision: 'approve' | 'reject' | 'edit') => {
-    if (!pendingApproval) return
+  const handleApprovalDecision = useCallback(
+    async (decision: 'approve' | 'reject' | 'edit') => {
+      if (!pendingApproval) return
 
-    // Clear pending approval first
-    setPendingApproval(null)
+      // Clear pending approval first
+      setPendingApproval(null)
 
-    // Submit with a resume command - the transport will send to agent:resume
-    try {
-      await stream.submit(
-        null, // No message needed for resume
-        { command: { resume: { decision } } }
-      )
-    } catch (err) {
-      console.error('[ChatContainer] Resume command failed:', err)
-    }
-  }, [pendingApproval, setPendingApproval, stream])
+      // Submit with a resume command - the transport will send to agent:resume
+      try {
+        await stream.submit(
+          null, // No message needed for resume
+          { command: { resume: { decision } } }
+        )
+      } catch (err) {
+        console.error('[ChatContainer] Resume command failed:', err)
+      }
+    },
+    [pendingApproval, setPendingApproval, stream]
+  )
 
   // Sync todos from stream state
   const agentValues = stream.values as AgentStreamValues | undefined
@@ -270,7 +297,8 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
             content: typeof streamMsg.content === 'string' ? streamMsg.content : '',
             tool_calls: streamMsg.tool_calls,
             // Include tool_call_id and name for tool messages
-            ...(role === 'tool' && streamMsg.tool_call_id && { tool_call_id: streamMsg.tool_call_id }),
+            ...(role === 'tool' &&
+              streamMsg.tool_call_id && { tool_call_id: streamMsg.tool_call_id }),
             ...(role === 'tool' && streamMsg.name && { name: streamMsg.name }),
             created_at: new Date()
           }
@@ -312,7 +340,8 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
           content: typeof streamMsg.content === 'string' ? streamMsg.content : '',
           tool_calls: streamMsg.tool_calls,
           // Include tool_call_id and name for tool messages
-          ...(role === 'tool' && streamMsg.tool_call_id && { tool_call_id: streamMsg.tool_call_id }),
+          ...(role === 'tool' &&
+            streamMsg.tool_call_id && { tool_call_id: streamMsg.tool_call_id }),
           ...(role === 'tool' && streamMsg.name && { name: streamMsg.name }),
           created_at: new Date()
         }
@@ -390,7 +419,7 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
 
   const handleSubmit = async (e: React.FormEvent): Promise<void> => {
     e.preventDefault()
-    if (!input.trim() || stream.isLoading) return
+    if (!input.trim() || stream.isLoading || !hasValidModel) return
 
     // Check if workspace is selected
     if (!workspacePath) {
@@ -502,9 +531,9 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
             )}
 
             {displayMessages.map((message) => (
-              <MessageBubble 
-                key={message.id} 
-                message={message} 
+              <MessageBubble
+                key={message.id}
+                message={message}
                 toolResults={toolResults}
                 pendingApproval={pendingApproval}
                 onApprovalDecision={handleApprovalDecision}
@@ -558,8 +587,8 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="Message..."
-                disabled={stream.isLoading}
+                placeholder={hasValidModel ? 'Message...' : 'Configure a model to start...'}
+                disabled={stream.isLoading || !hasValidModel}
                 className="flex-1 min-w-0 resize-none rounded-sm border border-border bg-background px-4 py-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
                 rows={1}
                 style={{ minHeight: '48px', maxHeight: '200px' }}
@@ -570,7 +599,13 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
                     <Square className="size-4" />
                   </Button>
                 ) : (
-                  <Button type="submit" variant="default" size="icon" disabled={!input.trim()} className="rounded-md">
+                  <Button
+                    type="submit"
+                    variant="default"
+                    size="icon"
+                    disabled={!input.trim() || !hasValidModel}
+                    className="rounded-md"
+                  >
                     <Send className="size-4" />
                   </Button>
                 )}
@@ -584,7 +619,6 @@ export function ChatContainer({ threadId }: ChatContainerProps): React.JSX.Eleme
           </div>
         </form>
       </div>
-
     </div>
   )
 }
