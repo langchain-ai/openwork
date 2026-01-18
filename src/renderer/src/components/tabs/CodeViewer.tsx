@@ -26,9 +26,18 @@ async function getHighlighter(): Promise<HighlighterCore> {
     highlighterPromise = createHighlighterCore({
       themes: [githubDarkDefault],
       langs: [
-        langTypescript, langTsx, langJavascript, langJsx,
-        langPython, langJson, langCss, langHtml,
-        langMarkdown, langYaml, langBash, langSql
+        langTypescript,
+        langTsx,
+        langJavascript,
+        langJsx,
+        langPython,
+        langJson,
+        langCss,
+        langHtml,
+        langMarkdown,
+        langYaml,
+        langBash,
+        langSql
       ],
       engine: createJavaScriptRegexEngine()
     })
@@ -43,33 +52,43 @@ interface CodeViewerProps {
 
 // Map file extensions to Shiki language identifiers (only languages we've loaded)
 const SUPPORTED_LANGS = new Set([
-  'typescript', 'tsx', 'javascript', 'jsx', 'python', 'json', 
-  'css', 'html', 'markdown', 'yaml', 'bash', 'sql'
+  'typescript',
+  'tsx',
+  'javascript',
+  'jsx',
+  'python',
+  'json',
+  'css',
+  'html',
+  'markdown',
+  'yaml',
+  'bash',
+  'sql'
 ])
 
 function getLanguage(ext: string | undefined): string | null {
   const langMap: Record<string, string> = {
-    'ts': 'typescript',
-    'tsx': 'tsx',
-    'js': 'javascript',
-    'jsx': 'jsx',
-    'mjs': 'javascript',
-    'cjs': 'javascript',
-    'py': 'python',
-    'json': 'json',
-    'css': 'css',
-    'html': 'html',
-    'htm': 'html',
-    'md': 'markdown',
-    'mdx': 'markdown',
-    'yaml': 'yaml',
-    'yml': 'yaml',
-    'sh': 'bash',
-    'bash': 'bash',
-    'zsh': 'bash',
-    'sql': 'sql'
+    ts: 'typescript',
+    tsx: 'tsx',
+    js: 'javascript',
+    jsx: 'jsx',
+    mjs: 'javascript',
+    cjs: 'javascript',
+    py: 'python',
+    json: 'json',
+    css: 'css',
+    html: 'html',
+    htm: 'html',
+    md: 'markdown',
+    mdx: 'markdown',
+    yaml: 'yaml',
+    yml: 'yaml',
+    sh: 'bash',
+    bash: 'bash',
+    zsh: 'bash',
+    sql: 'sql'
   }
-  
+
   const lang = ext ? langMap[ext] : null
   return lang && SUPPORTED_LANGS.has(lang) ? lang : null
 }
@@ -95,16 +114,16 @@ export function CodeViewer({ filePath, content }: CodeViewerProps) {
       try {
         console.log('[CodeViewer] Starting highlight for', language)
         const highlighter = await getHighlighter()
-        
+
         if (cancelled) return
-        
+
         const html = highlighter.codeToHtml(content, {
           lang: language,
           theme: 'github-dark-default'
         })
-        
+
         if (cancelled) return
-        
+
         console.log('[CodeViewer] Highlighting complete, html length:', html.length)
         setHighlightedHtml(html)
       } catch (e) {
@@ -137,10 +156,7 @@ export function CodeViewer({ filePath, content }: CodeViewerProps) {
       <ScrollArea className="flex-1 min-h-0">
         <div className="shiki-wrapper">
           {highlightedHtml ? (
-            <div 
-              className="shiki-content"
-              dangerouslySetInnerHTML={{ __html: highlightedHtml }} 
-            />
+            <div className="shiki-content" dangerouslySetInnerHTML={{ __html: highlightedHtml }} />
           ) : (
             // Fallback plain text rendering
             <pre className="p-4 text-sm font-mono leading-relaxed whitespace-pre-wrap break-all">

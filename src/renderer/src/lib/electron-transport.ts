@@ -123,7 +123,13 @@ export class ElectronIPCTransport implements UseStreamTransport {
     }
 
     // Create an async generator that bridges IPC events
-    return this.createStreamGenerator(threadId, messageContent, payload.command, payload.signal, modelId)
+    return this.createStreamGenerator(
+      threadId,
+      messageContent,
+      payload.command,
+      payload.signal,
+      modelId
+    )
   }
 
   private async *createErrorGenerator(code: string, message: string): AsyncGenerator<StreamEvent> {
@@ -159,27 +165,33 @@ export class ElectronIPCTransport implements UseStreamTransport {
     }
 
     // Start the stream via IPC (pass modelId to use the selected model)
-    const cleanup = window.api.agent.streamAgent(threadId, message, command, (ipcEvent) => {
-      // Convert IPC events to SDK format
-      const sdkEvents = this.convertToSDKEvents(ipcEvent as IPCEvent, threadId)
+    const cleanup = window.api.agent.streamAgent(
+      threadId,
+      message,
+      command,
+      (ipcEvent) => {
+        // Convert IPC events to SDK format
+        const sdkEvents = this.convertToSDKEvents(ipcEvent as IPCEvent, threadId)
 
-      for (const sdkEvent of sdkEvents) {
-        if (sdkEvent.event === 'done' || sdkEvent.event === 'error') {
-          isDone = true
-          hasError = sdkEvent.event === 'error'
-        }
+        for (const sdkEvent of sdkEvents) {
+          if (sdkEvent.event === 'done' || sdkEvent.event === 'error') {
+            isDone = true
+            hasError = sdkEvent.event === 'error'
+          }
 
-        // If someone is waiting for the next event, resolve immediately
-        if (resolveNext) {
-          const resolve = resolveNext
-          resolveNext = null
-          resolve(sdkEvent)
-        } else {
-          // Otherwise queue the event
-          eventQueue.push(sdkEvent)
+          // If someone is waiting for the next event, resolve immediately
+          if (resolveNext) {
+            const resolve = resolveNext
+            resolveNext = null
+            resolve(sdkEvent)
+          } else {
+            // Otherwise queue the event
+            eventQueue.push(sdkEvent)
+          }
         }
-      }
-    }, modelId)
+      },
+      modelId
+    )
 
     // Handle abort signal
     if (signal) {

@@ -110,10 +110,7 @@ function ThreadListItem({
           Rename
         </ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem
-          variant="destructive"
-          onClick={onDelete}
-        >
+        <ContextMenuItem variant="destructive" onClick={onDelete}>
           <Trash2 className="size-4 mr-2" />
           Delete
         </ContextMenuItem>
@@ -123,14 +120,8 @@ function ThreadListItem({
 }
 
 export function ThreadSidebar(): React.JSX.Element {
-  const {
-    threads,
-    currentThreadId,
-    createThread,
-    selectThread,
-    deleteThread,
-    updateThread
-  } = useAppStore()
+  const { threads, currentThreadId, createThread, selectThread, deleteThread, updateThread } =
+    useAppStore()
 
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null)
   const [editingTitle, setEditingTitle] = useState('')
@@ -161,7 +152,12 @@ export function ThreadSidebar(): React.JSX.Element {
     <aside className="flex h-full w-full flex-col border-r border-border bg-sidebar overflow-hidden">
       {/* New Thread Button - with dynamic safe area padding when zoomed out */}
       <div className="p-2" style={{ paddingTop: 'calc(8px + var(--sidebar-safe-padding, 0px))' }}>
-        <Button variant="ghost" size="sm" className="w-full justify-start gap-2" onClick={handleNewThread}>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-2"
+          onClick={handleNewThread}
+        >
           <Plus className="size-4" />
           New Thread
         </Button>

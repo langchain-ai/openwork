@@ -38,14 +38,15 @@ export function BinaryFileViewer({ filePath, size }: BinaryFileViewerProps) {
         <div className="w-24 h-24 rounded-2xl bg-accent/10 flex items-center justify-center">
           <File className="size-12 text-muted-foreground/50" />
         </div>
-        
+
         <div>
           <div className="font-medium text-foreground mb-1">{fileName}</div>
           <div className="text-sm text-muted-foreground mb-2">
             {ext} file • {formatSize(size)}
           </div>
           <div className="text-xs text-muted-foreground max-w-md">
-            This file type cannot be previewed in the viewer. You can open it with an external application.
+            This file type cannot be previewed in the viewer. You can open it with an external
+            application.
           </div>
         </div>
 

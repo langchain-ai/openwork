@@ -109,9 +109,9 @@ export function FileViewer({ filePath, threadId }: FileViewerProps) {
   // Route to appropriate viewer based on file type
   if (fileTypeInfo.type === 'image' && binaryContent) {
     return (
-      <ImageViewer 
-        filePath={filePath} 
-        base64Content={binaryContent} 
+      <ImageViewer
+        filePath={filePath}
+        base64Content={binaryContent}
         mimeType={fileTypeInfo.mimeType || 'image/png'}
       />
     )
@@ -119,9 +119,9 @@ export function FileViewer({ filePath, threadId }: FileViewerProps) {
 
   if (fileTypeInfo.type === 'video' && binaryContent) {
     return (
-      <MediaViewer 
-        filePath={filePath} 
-        base64Content={binaryContent} 
+      <MediaViewer
+        filePath={filePath}
+        base64Content={binaryContent}
         mimeType={fileTypeInfo.mimeType || 'video/mp4'}
         mediaType="video"
       />
@@ -130,9 +130,9 @@ export function FileViewer({ filePath, threadId }: FileViewerProps) {
 
   if (fileTypeInfo.type === 'audio' && binaryContent) {
     return (
-      <MediaViewer 
-        filePath={filePath} 
-        base64Content={binaryContent} 
+      <MediaViewer
+        filePath={filePath}
+        base64Content={binaryContent}
         mimeType={fileTypeInfo.mimeType || 'audio/mpeg'}
         mediaType="audio"
       />

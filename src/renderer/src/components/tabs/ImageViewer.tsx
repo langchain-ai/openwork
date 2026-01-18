@@ -16,7 +16,7 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
   const [panStart, setPanStart] = useState({ x: 0, y: 0 })
   const [panOffset, setPanOffset] = useState({ x: 0, y: 0 })
   const containerRef = useRef<HTMLDivElement>(null)
-  
+
   const fileName = filePath.split('/').pop() || filePath
   const imageUrl = `data:${mimeType};base64,${base64Content}`
 
@@ -90,7 +90,7 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
             </>
           )}
         </div>
-        
+
         <div className="flex items-center gap-1">
           <Button
             variant="ghost"
@@ -101,11 +101,9 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
           >
             <ZoomOut className="size-4" />
           </Button>
-          
-          <span className="text-xs text-muted-foreground min-w-[3rem] text-center">
-            {zoom}%
-          </span>
-          
+
+          <span className="text-xs text-muted-foreground min-w-[3rem] text-center">{zoom}%</span>
+
           <Button
             variant="ghost"
             size="sm"
@@ -115,22 +113,12 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
           >
             <ZoomIn className="size-4" />
           </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleRotate}
-            className="h-7 px-2"
-          >
+
+          <Button variant="ghost" size="sm" onClick={handleRotate} className="h-7 px-2">
             <RotateCw className="size-4" />
           </Button>
-          
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleResetZoom}
-            className="h-7 px-2"
-          >
+
+          <Button variant="ghost" size="sm" onClick={handleResetZoom} className="h-7 px-2">
             <Maximize2 className="size-4" />
           </Button>
         </div>
@@ -138,7 +126,7 @@ export function ImageViewer({ filePath, base64Content, mimeType }: ImageViewerPr
 
       {/* Image display */}
       <ScrollArea className="flex-1 min-h-0">
-        <div 
+        <div
           ref={containerRef}
           className="flex items-center justify-center min-h-full p-8 overflow-hidden"
           onMouseDown={handleMouseDown}

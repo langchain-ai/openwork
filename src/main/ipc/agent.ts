@@ -14,7 +14,10 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
   // Handle agent invocation with streaming
   ipcMain.on(
     'agent:invoke',
-    async (event, { threadId, message, modelId }: { threadId: string; message: string; modelId?: string }) => {
+    async (
+      event,
+      { threadId, message, modelId }: { threadId: string; message: string; modelId?: string }
+    ) => {
       const channel = `agent:stream:${threadId}`
       const window = BrowserWindow.fromWebContents(event.sender)
 

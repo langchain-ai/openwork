@@ -1,4 +1,4 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -64,50 +64,50 @@
 :root {
   /* Foundation */
   --radius: 3px;
-  --background: #0D0D0F;
+  --background: #0d0d0f;
   --background-elevated: #141418;
-  --background-interactive: #1C1C22;
-  --foreground: #E8E8EC;
+  --background-interactive: #1c1c22;
+  --foreground: #e8e8ec;
 
   /* Borders */
-  --border: #2A2A32;
-  --border-emphasis: #3A3A45;
-  --input: #2A2A32;
-  --ring: #3B82F6;
+  --border: #2a2a32;
+  --border-emphasis: #3a3a45;
+  --input: #2a2a32;
+  --ring: #3b82f6;
 
   /* Text hierarchy */
   --muted: #141418;
-  --muted-foreground: #8A8A96;
-  --tertiary-foreground: #5A5A66;
+  --muted-foreground: #8a8a96;
+  --tertiary-foreground: #5a5a66;
 
   /* Semantic mapping for shadcn compatibility */
   --card: #141418;
-  --card-foreground: #E8E8EC;
+  --card-foreground: #e8e8ec;
   --popover: #141418;
-  --popover-foreground: #E8E8EC;
-  --primary: #3B82F6;
-  --primary-foreground: #E8E8EC;
-  --secondary: #1C1C22;
-  --secondary-foreground: #E8E8EC;
-  --accent: #FB923C;
-  --accent-foreground: #0D0D0F;
-  --destructive: #E53E3E;
+  --popover-foreground: #e8e8ec;
+  --primary: #3b82f6;
+  --primary-foreground: #e8e8ec;
+  --secondary: #1c1c22;
+  --secondary-foreground: #e8e8ec;
+  --accent: #fb923c;
+  --accent-foreground: #0d0d0f;
+  --destructive: #e53e3e;
 
   /* Status colors */
-  --status-critical: #E53E3E;
-  --status-warning: #F59E0B;
-  --status-nominal: #22C55E;
-  --status-info: #3B82F6;
+  --status-critical: #e53e3e;
+  --status-warning: #f59e0b;
+  --status-nominal: #22c55e;
+  --status-info: #3b82f6;
 
   /* Sidebar */
   --sidebar: #141418;
-  --sidebar-foreground: #E8E8EC;
-  --sidebar-primary: #3B82F6;
-  --sidebar-primary-foreground: #E8E8EC;
-  --sidebar-accent: #1C1C22;
-  --sidebar-accent-foreground: #E8E8EC;
-  --sidebar-border: #2A2A32;
-  --sidebar-ring: #3B82F6;
+  --sidebar-foreground: #e8e8ec;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #e8e8ec;
+  --sidebar-accent: #1c1c22;
+  --sidebar-accent-foreground: #e8e8ec;
+  --sidebar-border: #2a2a32;
+  --sidebar-ring: #3b82f6;
 }
 
 @layer base {
@@ -188,7 +188,8 @@
 
 /* Pulse animation for live indicators */
 @keyframes tactical-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -253,12 +254,20 @@
   margin-bottom: 0.5em;
 }
 
-.streaming-markdown h1 { font-size: 1.5em; }
-.streaming-markdown h2 { font-size: 1.25em; }
-.streaming-markdown h3 { font-size: 1.125em; }
+.streaming-markdown h1 {
+  font-size: 1.5em;
+}
+.streaming-markdown h2 {
+  font-size: 1.25em;
+}
+.streaming-markdown h3 {
+  font-size: 1.125em;
+}
 .streaming-markdown h4,
 .streaming-markdown h5,
-.streaming-markdown h6 { font-size: 1em; }
+.streaming-markdown h6 {
+  font-size: 1em;
+}
 
 .streaming-markdown ul,
 .streaming-markdown ol {

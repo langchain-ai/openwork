@@ -186,11 +186,7 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps) {
                         apiKeys[provider.id] === '••••••••••••••••'
                       }
                     >
-                      {saving[provider.id] ? (
-                        <Loader2 className="size-4 animate-spin" />
-                      ) : (
-                        'Save'
-                      )}
+                      {saving[provider.id] ? <Loader2 className="size-4 animate-spin" /> : 'Save'}
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">

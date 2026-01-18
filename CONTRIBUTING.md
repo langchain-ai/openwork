@@ -13,12 +13,14 @@ Thank you for your interest in contributing to openwork! This document provides 
 ### Getting Started
 
 1. Fork and clone the repository:
+
    ```bash
    git clone https://github.com/YOUR_USERNAME/openwork.git
    cd openwork
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
@@ -86,15 +88,15 @@ openwork uses a tactical/SCADA-inspired design system:
 
 ### Colors
 
-| Role | Variable | Hex |
-|------|----------|-----|
-| Background | `--background` | `#0D0D0F` |
-| Elevated | `--background-elevated` | `#141418` |
-| Border | `--border` | `#2A2A32` |
-| Critical | `--status-critical` | `#E53E3E` |
-| Warning | `--status-warning` | `#F59E0B` |
-| Nominal | `--status-nominal` | `#22C55E` |
-| Info | `--status-info` | `#3B82F6` |
+| Role       | Variable                | Hex       |
+| ---------- | ----------------------- | --------- |
+| Background | `--background`          | `#0D0D0F` |
+| Elevated   | `--background-elevated` | `#141418` |
+| Border     | `--border`              | `#2A2A32` |
+| Critical   | `--status-critical`     | `#E53E3E` |
+| Warning    | `--status-warning`      | `#F59E0B` |
+| Nominal    | `--status-nominal`      | `#22C55E` |
+| Info       | `--status-info`         | `#3B82F6` |
 
 ### Typography
 
@@ -145,20 +147,21 @@ Use conventional commits:
 
 We use labels to organize issues:
 
-| Label | Description |
-|-------|-------------|
-| `bug` | Something isn't working |
-| `enhancement` | New feature or improvement |
-| `good first issue` | Good for newcomers |
-| `help wanted` | Extra attention needed |
-| `documentation` | Documentation improvements |
-| `question` | Further information requested |
-| `wontfix` | This will not be worked on |
+| Label              | Description                   |
+| ------------------ | ----------------------------- |
+| `bug`              | Something isn't working       |
+| `enhancement`      | New feature or improvement    |
+| `good first issue` | Good for newcomers            |
+| `help wanted`      | Extra attention needed        |
+| `documentation`    | Documentation improvements    |
+| `question`         | Further information requested |
+| `wontfix`          | This will not be worked on    |
 
 ## Questions?
 
 Open an issue or start a discussion on GitHub.
 changes
+
 - `chore:` Build/tooling changes
 
 ## Questions?

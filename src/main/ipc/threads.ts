@@ -68,9 +68,9 @@ export function registerThreadHandlers(ipcMain: IpcMain) {
 
       if (updates.title !== undefined) updateData.title = updates.title
       if (updates.status !== undefined) updateData.status = updates.status
-      if (updates.metadata !== undefined)
-        updateData.metadata = JSON.stringify(updates.metadata)
-      if (updates.thread_values !== undefined) updateData.thread_values = JSON.stringify(updates.thread_values)
+      if (updates.metadata !== undefined) updateData.metadata = JSON.stringify(updates.metadata)
+      if (updates.thread_values !== undefined)
+        updateData.thread_values = JSON.stringify(updates.thread_values)
 
       const row = dbUpdateThread(threadId, updateData)
       if (!row) throw new Error('Thread not found')
@@ -90,7 +90,7 @@ export function registerThreadHandlers(ipcMain: IpcMain) {
   // Delete a thread
   ipcMain.handle('threads:delete', async (_event, threadId: string) => {
     console.log('[Threads] Deleting thread:', threadId)
-    
+
     // Delete from our metadata store
     dbDeleteThread(threadId)
     console.log('[Threads] Deleted from metadata store')

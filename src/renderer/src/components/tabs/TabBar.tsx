@@ -20,18 +20,20 @@ export function TabBar({ className, threadId: propThreadId }: TabBarProps) {
   const { openFiles, activeTab, setActiveTab, closeFile } = threadState
 
   return (
-    <div className={cn(
-      "flex items-center h-9 border-b border-border bg-sidebar overflow-x-auto scrollbar-hide",
-      className
-    )}>
+    <div
+      className={cn(
+        'flex items-center h-9 border-b border-border bg-sidebar overflow-x-auto scrollbar-hide',
+        className
+      )}
+    >
       {/* Agent Tab - Always first and prominent */}
       <button
         onClick={() => setActiveTab('agent')}
         className={cn(
-          "flex items-center gap-2 px-4 h-full text-sm font-medium transition-colors shrink-0 border-r border-border",
+          'flex items-center gap-2 px-4 h-full text-sm font-medium transition-colors shrink-0 border-r border-border',
           activeTab === 'agent'
-            ? "bg-primary/15 text-primary border-b-2 border-b-primary"
-            : "text-muted-foreground hover:text-foreground hover:bg-background-interactive"
+            ? 'bg-primary/15 text-primary border-b-2 border-b-primary'
+            : 'text-muted-foreground hover:text-foreground hover:bg-background-interactive'
         )}
       >
         <Bot className="size-4" />
@@ -81,10 +83,10 @@ function FileTab({ file, isActive, onSelect, onClose }: FileTabProps) {
       onClick={onSelect}
       onMouseDown={handleMouseDown}
       className={cn(
-        "group flex items-center gap-2 px-3 h-full text-sm transition-colors shrink-0 border-r border-border max-w-[200px]",
+        'group flex items-center gap-2 px-3 h-full text-sm transition-colors shrink-0 border-r border-border max-w-[200px]',
         isActive
-          ? "bg-background text-foreground border-b-2 border-b-primary"
-          : "text-muted-foreground hover:text-foreground hover:bg-background-interactive"
+          ? 'bg-background text-foreground border-b-2 border-b-primary'
+          : 'text-muted-foreground hover:text-foreground hover:bg-background-interactive'
       )}
       title={file.path}
     >
@@ -93,8 +95,8 @@ function FileTab({ file, isActive, onSelect, onClose }: FileTabProps) {
       <button
         onClick={handleClose}
         className={cn(
-          "size-4 flex items-center justify-center rounded-sm hover:bg-background-interactive transition-colors",
-          isActive ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          'size-4 flex items-center justify-center rounded-sm hover:bg-background-interactive transition-colors',
+          isActive ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
         )}
       >
         <X className="size-3" />

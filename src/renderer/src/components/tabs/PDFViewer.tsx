@@ -28,13 +28,8 @@ export function PDFViewer({ filePath, base64Content }: PDFViewerProps) {
           <span className="text-muted-foreground/50">•</span>
           <span>PDF Document</span>
         </div>
-        
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleOpenExternal}
-          className="h-7 px-2 gap-1"
-        >
+
+        <Button variant="ghost" size="sm" onClick={handleOpenExternal} className="h-7 px-2 gap-1">
           <ExternalLink className="size-3" />
           <span className="text-xs">Download</span>
         </Button>
@@ -43,11 +38,7 @@ export function PDFViewer({ filePath, base64Content }: PDFViewerProps) {
       {/* PDF embed */}
       <ScrollArea className="flex-1 min-h-0">
         <div className="flex flex-col items-center min-h-full bg-muted/30">
-          <object
-            data={pdfUrl}
-            type="application/pdf"
-            className="w-full h-full min-h-[600px]"
-          >
+          <object data={pdfUrl} type="application/pdf" className="w-full h-full min-h-[600px]">
             {/* Fallback if PDF can't be displayed inline */}
             <div className="flex flex-col items-center justify-center min-h-[600px] gap-4 p-8">
               <FileText className="size-16 text-muted-foreground/50" />

@@ -1,8 +1,8 @@
-import { 
-  FileText, 
-  FolderOpen, 
-  Search, 
-  Edit, 
+import {
+  FileText,
+  FolderOpen,
+  Search,
+  Edit,
   Terminal,
   ListTodo,
   GitBranch,
@@ -37,7 +37,7 @@ const TOOL_ICONS: Record<string, React.ComponentType<{ className?: string }>> = 
   grep: Search,
   execute: Terminal,
   write_todos: ListTodo,
-  task: GitBranch,
+  task: GitBranch
 }
 
 const TOOL_LABELS: Record<string, string> = {
@@ -49,7 +49,7 @@ const TOOL_LABELS: Record<string, string> = {
   grep: 'Search Content',
   execute: 'Execute Command',
   write_todos: 'Update Tasks',
-  task: 'Subagent Task',
+  task: 'Subagent Task'
 }
 
 // Tools whose results are shown in the UI panels and don't need verbose display
@@ -78,12 +78,12 @@ function TodosDisplay({ todos }: { todos: Todo[] }) {
         const Icon = config.icon
         const isDone = todo.status === 'completed' || todo.status === 'cancelled'
         return (
-          <div key={todo.id || i} className={cn(
-            "flex items-start gap-2 text-xs",
-            isDone && "opacity-50"
-          )}>
-            <Icon className={cn("size-3.5 mt-0.5 shrink-0", config.color)} />
-            <span className={cn(isDone && "line-through")}>{todo.content}</span>
+          <div
+            key={todo.id || i}
+            className={cn('flex items-start gap-2 text-xs', isDone && 'opacity-50')}
+          >
+            <Icon className={cn('size-3.5 mt-0.5 shrink-0', config.color)} />
+            <span className={cn(isDone && 'line-through')}>{todo.content}</span>
           </div>
         )
       })}
@@ -92,7 +92,13 @@ function TodosDisplay({ todos }: { todos: Todo[] }) {
 }
 
 // Render file list nicely
-function FileListDisplay({ files, isGlob }: { files: string[] | Array<{ path: string; is_dir?: boolean }>; isGlob?: boolean }) {
+function FileListDisplay({
+  files,
+  isGlob
+}: {
+  files: string[] | Array<{ path: string; is_dir?: boolean }>
+  isGlob?: boolean
+}) {
   const items = files.slice(0, 15) // Limit display
   const hasMore = files.length > 15
 
@@ -113,28 +119,33 @@ function FileListDisplay({ files, isGlob }: { files: string[] | Array<{ path: st
         )
       })}
       {hasMore && (
-        <div className="text-xs text-muted-foreground mt-1">
-          ... and {files.length - 15} more
-        </div>
+        <div className="text-xs text-muted-foreground mt-1">... and {files.length - 15} more</div>
       )}
     </div>
   )
 }
 
 // Render grep results nicely
-function GrepResultsDisplay({ matches }: { matches: Array<{ path: string; line?: number; text?: string }> }) {
-  const grouped = matches.reduce((acc, match) => {
-    if (!acc[match.path]) acc[match.path] = []
-    acc[match.path].push(match)
-    return acc
-  }, {} as Record<string, typeof matches>)
+function GrepResultsDisplay({
+  matches
+}: {
+  matches: Array<{ path: string; line?: number; text?: string }>
+}) {
+  const grouped = matches.reduce(
+    (acc, match) => {
+      if (!acc[match.path]) acc[match.path] = []
+      acc[match.path].push(match)
+      return acc
+    },
+    {} as Record<string, typeof matches>
+  )
 
   const files = Object.keys(grouped).slice(0, 5)
   const hasMore = Object.keys(grouped).length > 5
 
   return (
     <div className="space-y-2">
-      {files.map(path => (
+      {files.map((path) => (
         <div key={path} className="text-xs">
           <div className="flex items-center gap-1.5 font-medium text-status-info mb-1">
             <FileText className="size-3" />
@@ -173,7 +184,9 @@ function FileContentPreview({ content }: { content: string; path?: string }) {
       <pre className="p-2 overflow-auto max-h-40 w-full">
         {preview.map((line, i) => (
           <div key={i} className="flex min-w-0">
-            <span className="w-8 shrink-0 text-muted-foreground select-none pr-2 text-right">{i + 1}</span>
+            <span className="w-8 shrink-0 text-muted-foreground select-none pr-2 text-right">
+              {i + 1}
+            </span>
             <span className="flex-1 min-w-0 truncate">{line || ' '}</span>
           </div>
         ))}
@@ -199,10 +212,14 @@ function FileEditSummary({ args }: { args: Record<string, unknown> }) {
     return (
       <div className="text-xs space-y-2">
         <div className="flex items-center gap-1.5 text-status-critical">
-          <span className="font-mono bg-status-critical/10 px-1.5 py-0.5 rounded">- {oldStr.split('\n').length} lines</span>
+          <span className="font-mono bg-status-critical/10 px-1.5 py-0.5 rounded">
+            - {oldStr.split('\n').length} lines
+          </span>
         </div>
         <div className="flex items-center gap-1.5 text-status-nominal">
-          <span className="font-mono bg-status-nominal/10 px-1.5 py-0.5 rounded">+ {newStr.split('\n').length} lines</span>
+          <span className="font-mono bg-status-nominal/10 px-1.5 py-0.5 rounded">
+            + {newStr.split('\n').length} lines
+          </span>
         </div>
       </div>
     )
@@ -239,7 +256,13 @@ function CommandDisplay({ command, output }: { command: string; output?: string 
 }
 
 // Subagent task display
-function TaskDisplay({ args, isExpanded }: { args: Record<string, unknown>; isExpanded?: boolean }) {
+function TaskDisplay({
+  args,
+  isExpanded
+}: {
+  args: Record<string, unknown>
+  isExpanded?: boolean
+}) {
   const name = args.name as string | undefined
   const description = args.description as string | undefined
 
@@ -252,10 +275,7 @@ function TaskDisplay({ args, isExpanded }: { args: Record<string, unknown>; isEx
         </div>
       )}
       {description && (
-        <p className={cn(
-          "text-muted-foreground pl-5",
-          !isExpanded && "line-clamp-2"
-        )}>
+        <p className={cn('text-muted-foreground pl-5', !isExpanded && 'line-clamp-2')}>
           {description}
         </p>
       )}
@@ -263,7 +283,13 @@ function TaskDisplay({ args, isExpanded }: { args: Record<string, unknown>; isEx
   )
 }
 
-export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onApprovalDecision }: ToolCallRendererProps) {
+export function ToolCallRenderer({
+  toolCall,
+  result,
+  isError,
+  needsApproval,
+  onApprovalDecision
+}: ToolCallRendererProps) {
   // Defensive: ensure args is always an object
   const args = toolCall?.args || {}
 
@@ -344,7 +370,9 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
       return (
         <div className="text-xs text-status-critical flex items-start gap-1.5">
           <XCircle className="size-3 mt-0.5 shrink-0" />
-          <span className="break-words">{typeof result === 'string' ? result : JSON.stringify(result)}</span>
+          <span className="break-words">
+            {typeof result === 'string' ? result : JSON.stringify(result)}
+          </span>
         </div>
       )
     }
@@ -366,13 +394,18 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
 
       case 'ls': {
         if (Array.isArray(result)) {
-          const dirs = result.filter((f: { is_dir?: boolean } | string) => typeof f === 'object' && f.is_dir).length
+          const dirs = result.filter(
+            (f: { is_dir?: boolean } | string) => typeof f === 'object' && f.is_dir
+          ).length
           const files = result.length - dirs
           return (
             <div className="space-y-2">
               <div className="text-xs text-status-nominal flex items-center gap-1.5">
                 <CheckCircle2 className="size-3" />
-                <span>{files} file{files !== 1 ? 's' : ''}{dirs > 0 ? `, ${dirs} folder${dirs !== 1 ? 's' : ''}` : ''}</span>
+                <span>
+                  {files} file{files !== 1 ? 's' : ''}
+                  {dirs > 0 ? `, ${dirs} folder${dirs !== 1 ? 's' : ''}` : ''}
+                </span>
               </div>
               <FileListDisplay files={result} />
             </div>
@@ -387,7 +420,9 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
             <div className="space-y-2">
               <div className="text-xs text-status-nominal flex items-center gap-1.5">
                 <CheckCircle2 className="size-3" />
-                <span>Found {result.length} match{result.length !== 1 ? 'es' : ''}</span>
+                <span>
+                  Found {result.length} match{result.length !== 1 ? 'es' : ''}
+                </span>
               </div>
               <FileListDisplay files={result} isGlob />
             </div>
@@ -403,7 +438,10 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
             <div className="space-y-2">
               <div className="text-xs text-status-nominal flex items-center gap-1.5">
                 <CheckCircle2 className="size-3" />
-                <span>{result.length} match{result.length !== 1 ? 'es' : ''} in {fileCount} file{fileCount !== 1 ? 's' : ''}</span>
+                <span>
+                  {result.length} match{result.length !== 1 ? 'es' : ''} in {fileCount} file
+                  {fileCount !== 1 ? 's' : ''}
+                </span>
               </div>
               <GrepResultsDisplay matches={result} />
             </div>
@@ -500,7 +538,10 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
           return (
             <div className="text-xs text-status-nominal flex items-center gap-1.5">
               <CheckCircle2 className="size-3" />
-              <span className="truncate">{result.slice(0, 100)}{result.length > 100 ? '...' : ''}</span>
+              <span className="truncate">
+                {result.slice(0, 100)}
+                {result.length > 100 ? '...' : ''}
+              </span>
             </div>
           )
         }
@@ -519,10 +560,14 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
   const hasFormattedDisplay = formattedContent || formattedResult
 
   return (
-    <div className={cn(
-      "rounded-sm border overflow-hidden",
-      needsApproval ? "border-amber-500/50 bg-amber-500/5" : "border-border bg-background-elevated"
-    )}>
+    <div
+      className={cn(
+        'rounded-sm border overflow-hidden',
+        needsApproval
+          ? 'border-amber-500/50 bg-amber-500/5'
+          : 'border-border bg-background-elevated'
+      )}
+    >
       {/* Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -533,11 +578,13 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
         ) : (
           <ChevronRight className="size-4 text-muted-foreground shrink-0" />
         )}
-        
-        <Icon className={cn("size-4 shrink-0", needsApproval ? "text-amber-500" : "text-status-info")} />
-        
+
+        <Icon
+          className={cn('size-4 shrink-0', needsApproval ? 'text-amber-500' : 'text-status-info')}
+        />
+
         <span className="text-xs font-medium shrink-0">{label}</span>
-        
+
         {displayArg && (
           <span className="flex-1 truncate text-left text-xs text-muted-foreground font-mono">
             {displayArg}
@@ -561,7 +608,7 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
             {isError ? 'ERROR' : 'OK'}
           </Badge>
         )}
-        
+
         {isPanelSynced && !needsApproval && (
           <Badge variant="outline" className="shrink-0 text-[9px]">
             SYNCED
@@ -574,7 +621,7 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
         <div className="border-t border-amber-500/20 px-3 py-3 space-y-3">
           {/* Show formatted content (e.g., command preview) */}
           {formattedContent}
-          
+
           {/* Arguments */}
           <div>
             <div className="text-section-header text-[10px] mb-1">ARGUMENTS</div>
@@ -582,16 +629,16 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
               {JSON.stringify(args, null, 2)}
             </pre>
           </div>
-          
+
           {/* Action buttons */}
           <div className="flex items-center justify-end gap-2">
-            <button 
+            <button
               className="px-3 py-1.5 text-xs border border-border rounded-sm hover:bg-background-interactive transition-colors"
               onClick={handleReject}
             >
               Reject
             </button>
-            <button 
+            <button
               className="px-3 py-1.5 text-xs bg-status-nominal text-background rounded-sm hover:bg-status-nominal/90 transition-colors"
               onClick={handleApprove}
             >
@@ -628,10 +675,12 @@ export function ToolCallRenderer({ toolCall, result, isError, needsApproval, onA
           {result !== undefined && (
             <div className="overflow-hidden w-full">
               <div className="text-section-header mb-1">RAW RESULT</div>
-              <pre className={cn(
-                "text-xs font-mono p-2 rounded-sm overflow-auto max-h-48 w-full whitespace-pre-wrap break-all",
-                isError ? "bg-status-critical/10 text-status-critical" : "bg-background"
-              )}>
+              <pre
+                className={cn(
+                  'text-xs font-mono p-2 rounded-sm overflow-auto max-h-48 w-full whitespace-pre-wrap break-all',
+                  isError ? 'bg-status-critical/10 text-status-critical' : 'bg-background'
+                )}
+              >
                 {typeof result === 'string' ? result : JSON.stringify(result, null, 2)}
               </pre>
             </div>
