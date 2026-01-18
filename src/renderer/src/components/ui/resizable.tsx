@@ -1,5 +1,5 @@
-import { useCallback, useRef } from "react"
-import { GripVertical } from "lucide-react"
+import { useCallback, useRef } from 'react'
+import { GripVertical } from 'lucide-react'
 
 const HANDLE_WIDTH = 6 // px
 
@@ -7,31 +7,34 @@ interface ResizeHandleProps {
   onDrag: (totalDelta: number) => void
 }
 
-export function ResizeHandle({ onDrag }: ResizeHandleProps) {
+export function ResizeHandle({ onDrag }: ResizeHandleProps): JSX.Element {
   const startXRef = useRef<number>(0)
-  
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    e.preventDefault()
-    startXRef.current = e.clientX
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      // Calculate total delta from drag start
-      const totalDelta = e.clientX - startXRef.current
-      onDrag(totalDelta)
-    }
-    
-    const handleMouseUp = () => {
-      document.removeEventListener('mousemove', handleMouseMove)
-      document.removeEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
-    
-    document.addEventListener('mousemove', handleMouseMove)
-    document.addEventListener('mouseup', handleMouseUp)
-    document.body.style.cursor = 'col-resize'
-    document.body.style.userSelect = 'none'
-  }, [onDrag])
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent): void => {
+      e.preventDefault()
+      startXRef.current = e.clientX
+
+      const handleMouseMove = (e: MouseEvent): void => {
+        // Calculate total delta from drag start
+        const totalDelta = e.clientX - startXRef.current
+        onDrag(totalDelta)
+      }
+
+      const handleMouseUp = (): void => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+        document.body.style.cursor = ''
+        document.body.style.userSelect = ''
+      }
+
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      document.body.style.cursor = 'col-resize'
+      document.body.style.userSelect = 'none'
+    },
+    [onDrag]
+  )
 
   return (
     <div
