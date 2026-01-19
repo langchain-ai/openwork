@@ -23,6 +23,9 @@ const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   'o1-mini': 128_000,
   'o3': 200_000,
   'o3-mini': 200_000,
+  // DeepSeek models
+  'deepseek-chat': 128_000,
+  'deepseek-reasoner': 128_000,
   // Google models
   'gemini-3-pro-preview': 2_000_000,
   'gemini-3-flash-preview': 1_000_000,
@@ -53,6 +56,7 @@ function getContextLimit(modelId: string): number {
   // Infer from model name patterns
   if (modelId.includes('claude')) return 200_000
   if (modelId.includes('gpt-4o') || modelId.includes('o1') || modelId.includes('o3')) return 128_000
+  if (modelId.includes('deepseek')) return 128_000
   if (modelId.includes('gemini')) return 1_000_000
 
   return DEFAULT_CONTEXT_LIMIT

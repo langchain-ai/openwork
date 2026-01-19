@@ -150,6 +150,14 @@ const api = {
       return ipcRenderer.invoke('models:deleteApiKey', provider)
     }
   },
+  settings: {
+    getAutoApproveExecute: (): Promise<boolean> => {
+      return ipcRenderer.invoke('settings:getAutoApprove')
+    },
+    setAutoApproveExecute: (value: boolean): Promise<void> => {
+      return ipcRenderer.invoke('settings:setAutoApprove', value)
+    }
+  },
   workspace: {
     get: (threadId?: string): Promise<string | null> => {
       return ipcRenderer.invoke('workspace:get', threadId)

@@ -16,7 +16,8 @@ const store = new Store({
 const PROVIDERS: Omit<Provider, 'hasApiKey'>[] = [
   { id: 'anthropic', name: 'Anthropic' },
   { id: 'openai', name: 'OpenAI' },
-  { id: 'google', name: 'Google' }
+  { id: 'google', name: 'Google' },
+  { id: 'deepseek', name: 'DeepSeek' }
 ]
 
 // Available models configuration (updated Jan 2026)
@@ -154,6 +155,23 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     description: 'Cost-efficient variant with faster response times',
     available: true
   },
+  // DeepSeek models (OpenAI-compatible)
+  {
+    id: 'deepseek-chat',
+    name: 'DeepSeek Chat (V3)',
+    provider: 'deepseek',
+    model: 'deepseek-chat',
+    description: 'General-purpose chat model with strong coding performance',
+    available: true
+  },
+  {
+    id: 'deepseek-reasoner',
+    name: 'DeepSeek Reasoner (R1)',
+    provider: 'deepseek',
+    model: 'deepseek-reasoner',
+    description: 'Reasoning-focused model for complex tasks',
+    available: true
+  },
   // Google Gemini models
   {
     id: 'gemini-3-pro-preview',
@@ -215,6 +233,16 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
   // Set default model
   ipcMain.handle('models:setDefault', async (_event, modelId: string) => {
     store.set('defaultModel', modelId)
+  })
+
+  // Get auto-approve setting for shell commands
+  ipcMain.handle('settings:getAutoApprove', async () => {
+    return store.get('autoApproveExecute', false) as boolean
+  })
+
+  // Set auto-approve setting for shell commands
+  ipcMain.handle('settings:setAutoApprove', async (_event, value: boolean) => {
+    store.set('autoApproveExecute', Boolean(value))
   })
 
   // Set API key for a provider (stored in ~/.openwork/.env)

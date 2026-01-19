@@ -10,6 +10,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 
 interface SettingsDialogProps {
   open: boolean
@@ -41,6 +42,12 @@ const PROVIDERS: ProviderConfig[] = [
     name: 'Google AI',
     envVar: 'GOOGLE_API_KEY',
     placeholder: 'AIza...'
+  },
+  {
+    id: 'deepseek',
+    name: 'DeepSeek',
+    envVar: 'DEEPSEEK_API_KEY',
+    placeholder: 'sk-...'
   }
 ]
 
@@ -50,6 +57,8 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps): Rea
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({})
   const [saving, setSaving] = useState<Record<string, boolean>>({})
   const [loading, setLoading] = useState(true)
+  const [autoApproveExecute, setAutoApproveExecute] = useState(false)
+  const [savingAutoApprove, setSavingAutoApprove] = useState(false)
 
   // Load existing settings on mount
   useEffect(() => {
@@ -82,6 +91,14 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps): Rea
 
     setApiKeys(keys)
     setSavedKeys(saved)
+
+    try {
+      const autoApprove = await window.api.settings.getAutoApproveExecute()
+      setAutoApproveExecute(Boolean(autoApprove))
+    } catch (e) {
+      setAutoApproveExecute(false)
+    }
+
     setLoading(false)
   }
 
@@ -114,6 +131,19 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps): Rea
 
   function toggleShowKey(providerId: string): void {
     setShowKeys((prev) => ({ ...prev, [providerId]: !prev[providerId] }))
+  }
+
+  async function handleAutoApproveChange(value: boolean) {
+    setAutoApproveExecute(value)
+    setSavingAutoApprove(true)
+    try {
+      await window.api.settings.setAutoApproveExecute(value)
+    } catch (e) {
+      console.error('Failed to update auto-approve setting:', e)
+      setAutoApproveExecute(!value)
+    } finally {
+      setSavingAutoApprove(false)
+    }
   }
 
   return (
@@ -200,6 +230,26 @@ export function SettingsDialog({ open, onOpenChange }: SettingsDialogProps): Rea
               ))}
             </div>
           )}
+        </div>
+
+        <Separator />
+
+        <div className="space-y-4 py-2">
+          <div className="text-section-header">AGENT</div>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <div className="text-sm font-medium">Auto-approve shell commands</div>
+              <p className="text-xs text-muted-foreground">
+                Run the `execute` tool without manual approval prompts.
+              </p>
+            </div>
+            <Switch
+              checked={autoApproveExecute}
+              onCheckedChange={handleAutoApproveChange}
+              disabled={loading || savingAutoApprove}
+              aria-label="Toggle auto-approve for shell commands"
+            />
+          </div>
         </div>
 
         <Separator />

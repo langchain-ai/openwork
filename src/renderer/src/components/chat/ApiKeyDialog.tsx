@@ -21,7 +21,8 @@ interface ApiKeyDialogProps {
 const PROVIDER_INFO: Record<string, { placeholder: string; envVar: string }> = {
   anthropic: { placeholder: 'sk-ant-...', envVar: 'ANTHROPIC_API_KEY' },
   openai: { placeholder: 'sk-...', envVar: 'OPENAI_API_KEY' },
-  google: { placeholder: 'AIza...', envVar: 'GOOGLE_API_KEY' }
+  google: { placeholder: 'AIza...', envVar: 'GOOGLE_API_KEY' },
+  deepseek: { placeholder: 'sk-...', envVar: 'DEEPSEEK_API_KEY' }
 }
 
 export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps): React.JSX.Element | null {
