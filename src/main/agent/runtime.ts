@@ -5,6 +5,7 @@ import { getApiKey, getThreadCheckpointPath } from "../storage"
 import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatOpenAI } from "@langchain/openai"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
+import { DeepSeekChatOpenAI } from "./deepseek-model"
 import { SqlJsSaver } from "../checkpointer/sqljs-saver"
 import { LocalSandbox } from "./local-sandbox"
 
@@ -61,7 +62,7 @@ export async function closeCheckpointer(threadId: string): Promise<void> {
 // Get the appropriate model instance based on configuration
 function getModelInstance(
   modelId?: string
-): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
+): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | DeepSeekChatOpenAI | string {
   const model = modelId || getDefaultModel()
   console.log("[Runtime] Using model:", model)
 
@@ -90,6 +91,18 @@ function getModelInstance(
     return new ChatOpenAI({
       model,
       openAIApiKey: apiKey
+    })
+  } else if (model.startsWith("deepseek")) {
+    const apiKey = getApiKey("deepseek")
+    console.log("[Runtime] DeepSeek API key present:", !!apiKey)
+    if (!apiKey) {
+      throw new Error("DeepSeek API key not configured")
+    }
+    return new DeepSeekChatOpenAI({
+      model,
+      apiKey,
+      configuration: { baseURL: "https://api.deepseek.com" },
+      streaming: false
     })
   } else if (model.startsWith("gemini")) {
     const apiKey = getApiKey("google")
