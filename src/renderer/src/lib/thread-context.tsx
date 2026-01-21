@@ -546,6 +546,16 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
                   tool_calls?: unknown[]
                   tool_call_id?: string
                   name?: string
+                  kwargs?: {
+                    id?: string
+                    content?: string | unknown[]
+                    tool_calls?: unknown[]
+                    tool_call_id?: string
+                    name?: string
+                    additional_kwargs?: {
+                      content?: string | unknown[]
+                    }
+                  }
                 }>
                 todos?: Array<{ id?: string; content?: string; status?: string }>
                 __interrupt__?: Array<{
