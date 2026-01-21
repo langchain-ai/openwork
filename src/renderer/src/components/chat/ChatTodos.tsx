@@ -1,6 +1,6 @@
-import { CheckCircle2, Circle, Clock, XCircle, ListTodo } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import type { Todo } from '@/types'
+import { CheckCircle2, Circle, Clock, XCircle, ListTodo } from "lucide-react"
+import { cn } from "@/lib/utils"
+import type { Todo } from "@/types"
 
 interface ChatTodosProps {
   todos: Todo[]
@@ -9,19 +9,19 @@ interface ChatTodosProps {
 const STATUS_CONFIG = {
   pending: {
     icon: Circle,
-    color: 'text-muted-foreground'
+    color: "text-muted-foreground"
   },
   in_progress: {
     icon: Clock,
-    color: 'text-status-info'
+    color: "text-status-info"
   },
   completed: {
     icon: CheckCircle2,
-    color: 'text-status-nominal'
+    color: "text-status-nominal"
   },
   cancelled: {
     icon: XCircle,
-    color: 'text-muted-foreground'
+    color: "text-muted-foreground"
   }
 }
 
@@ -29,8 +29,8 @@ export function ChatTodos({ todos }: ChatTodosProps): React.JSX.Element | null {
   if (todos.length === 0) return null
 
   // Separate active and completed todos
-  const activeTodos = todos.filter(t => t.status === 'in_progress' || t.status === 'pending')
-  const completedCount = todos.filter(t => t.status === 'completed').length
+  const activeTodos = todos.filter((t) => t.status === "in_progress" || t.status === "pending")
+  const completedCount = todos.filter((t) => t.status === "completed").length
   const totalCount = todos.length
 
   // Calculate progress
@@ -62,7 +62,7 @@ export function ChatTodos({ todos }: ChatTodosProps): React.JSX.Element | null {
             const Icon = config.icon
             return (
               <div key={todo.id} className="flex items-start gap-2 text-xs">
-                <Icon className={cn('size-3.5 mt-0.5 shrink-0', config.color)} />
+                <Icon className={cn("size-3.5 mt-0.5 shrink-0", config.color)} />
                 <span>{todo.content}</span>
               </div>
             )
@@ -73,7 +73,7 @@ export function ChatTodos({ todos }: ChatTodosProps): React.JSX.Element | null {
       {/* Completed summary (collapsed) */}
       {completedCount > 0 && activeTodos.length > 0 && (
         <div className="px-3 py-1.5 text-xs text-muted-foreground border-t border-border bg-background">
-          {completedCount} task{completedCount !== 1 ? 's' : ''} completed
+          {completedCount} task{completedCount !== 1 ? "s" : ""} completed
         </div>
       )}
     </div>

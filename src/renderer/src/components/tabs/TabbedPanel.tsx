@@ -1,18 +1,18 @@
-import { useCurrentThread } from '@/lib/thread-context'
-import { TabBar } from './TabBar'
-import { FileViewer } from './FileViewer'
-import { ChatContainer } from '@/components/chat/ChatContainer'
+import { useCurrentThread } from "@/lib/thread-context"
+import { TabBar } from "./TabBar"
+import { FileViewer } from "./FileViewer"
+import { ChatContainer } from "@/components/chat/ChatContainer"
 
 interface TabbedPanelProps {
   threadId: string
   showTabBar?: boolean
 }
 
-export function TabbedPanel({ threadId, showTabBar = true }: TabbedPanelProps) {
+export function TabbedPanel({ threadId, showTabBar = true }: TabbedPanelProps): React.JSX.Element {
   const { activeTab, openFiles } = useCurrentThread(threadId)
 
   // Determine what to render based on active tab
-  const isAgentTab = activeTab === 'agent'
+  const isAgentTab = activeTab === "agent"
   const activeFile = openFiles.find((f) => f.path === activeTab)
 
   return (

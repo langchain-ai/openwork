@@ -1,36 +1,36 @@
-import { useState } from 'react'
-import { CheckCircle2, Circle, Clock, XCircle, ChevronRight, ChevronDown } from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
-import { useAppStore } from '@/lib/store'
-import { useThreadState } from '@/lib/thread-context'
-import { cn } from '@/lib/utils'
-import type { Todo } from '@/types'
+import { useState } from "react"
+import { CheckCircle2, Circle, Clock, XCircle, ChevronRight, ChevronDown } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
+import { useAppStore } from "@/lib/store"
+import { useThreadState } from "@/lib/thread-context"
+import { cn } from "@/lib/utils"
+import type { Todo } from "@/types"
 
 const STATUS_CONFIG = {
   pending: {
     icon: Circle,
-    badge: 'outline' as const,
-    label: 'PENDING',
-    color: 'text-muted-foreground'
+    badge: "outline" as const,
+    label: "PENDING",
+    color: "text-muted-foreground"
   },
   in_progress: {
     icon: Clock,
-    badge: 'info' as const,
-    label: 'IN PROGRESS',
-    color: 'text-status-info'
+    badge: "info" as const,
+    label: "IN PROGRESS",
+    color: "text-status-info"
   },
   completed: {
     icon: CheckCircle2,
-    badge: 'nominal' as const,
-    label: 'DONE',
-    color: 'text-status-nominal'
+    badge: "nominal" as const,
+    label: "DONE",
+    color: "text-status-nominal"
   },
   cancelled: {
     icon: XCircle,
-    badge: 'critical' as const,
-    label: 'CANCELLED',
-    color: 'text-muted-foreground'
+    badge: "critical" as const,
+    label: "CANCELLED",
+    color: "text-muted-foreground"
   }
 }
 
@@ -41,10 +41,10 @@ export function TodoPanel(): React.JSX.Element {
   const [completedExpanded, setCompletedExpanded] = useState(false)
 
   // Group todos by status
-  const inProgress = todos.filter((t) => t.status === 'in_progress')
-  const pending = todos.filter((t) => t.status === 'pending')
-  const completed = todos.filter((t) => t.status === 'completed')
-  const cancelled = todos.filter((t) => t.status === 'cancelled')
+  const inProgress = todos.filter((t) => t.status === "in_progress")
+  const pending = todos.filter((t) => t.status === "pending")
+  const completed = todos.filter((t) => t.status === "completed")
+  const cancelled = todos.filter((t) => t.status === "cancelled")
 
   // Completed section includes both completed and cancelled
   const doneItems = [...completed, ...cancelled]
@@ -139,17 +139,17 @@ function TodoItem({ todo }: { todo: Todo }): React.JSX.Element {
   return (
     <div
       className={cn(
-        'flex items-start gap-3 rounded-sm border border-border p-3 transition-colors',
-        todo.status === 'completed' && 'opacity-60',
-        todo.status === 'cancelled' && 'opacity-40'
+        "flex items-start gap-3 rounded-sm border border-border p-3 transition-colors",
+        todo.status === "completed" && "opacity-60",
+        todo.status === "cancelled" && "opacity-40"
       )}
     >
-      <Icon className={cn('size-4 shrink-0 mt-0.5', config.color)} />
+      <Icon className={cn("size-4 shrink-0 mt-0.5", config.color)} />
       <div className="flex-1 min-w-0">
         <div
           className={cn(
-            'text-sm',
-            (todo.status === 'completed' || todo.status === 'cancelled') && 'line-through'
+            "text-sm",
+            (todo.status === "completed" || todo.status === "cancelled") && "line-through"
           )}
         >
           {todo.content}

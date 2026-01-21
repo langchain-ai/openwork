@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react'
-import { Eye, EyeOff, Loader2, Trash2 } from 'lucide-react'
+import { useState, useEffect } from "react"
+import { Eye, EyeOff, Loader2, Trash2 } from "lucide-react"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useAppStore } from '@/lib/store'
-import type { Provider } from '@/types'
+} from "@/components/ui/dialog"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { useAppStore } from "@/lib/store"
+import type { Provider } from "@/types"
 
 interface ApiKeyDialogProps {
   open: boolean
@@ -19,59 +19,63 @@ interface ApiKeyDialogProps {
 }
 
 const PROVIDER_INFO: Record<string, { placeholder: string; envVar: string }> = {
-  anthropic: { placeholder: 'sk-ant-...', envVar: 'ANTHROPIC_API_KEY' },
-  openai: { placeholder: 'sk-...', envVar: 'OPENAI_API_KEY' },
-  google: { placeholder: 'AIza...', envVar: 'GOOGLE_API_KEY' },
-  deepseek: { placeholder: 'sk-...', envVar: 'DEEPSEEK_API_KEY' }
+  anthropic: { placeholder: "sk-ant-...", envVar: "ANTHROPIC_API_KEY" },
+  openai: { placeholder: "sk-...", envVar: "OPENAI_API_KEY" },
+  google: { placeholder: "AIza...", envVar: "GOOGLE_API_KEY" },
+  deepseek: { placeholder: "sk-...", envVar: "DEEPSEEK_API_KEY" }
 }
 
-export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps) {
-  const [apiKey, setApiKey] = useState('')
+export function ApiKeyDialog({
+  open,
+  onOpenChange,
+  provider
+}: ApiKeyDialogProps): React.JSX.Element | null {
+  const [apiKey, setApiKey] = useState("")
   const [showKey, setShowKey] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [hasExistingKey, setHasExistingKey] = useState(false)
-  
+
   const { setApiKey: saveApiKey, deleteApiKey } = useAppStore()
 
   // Check if there's an existing key when dialog opens
   useEffect(() => {
     if (open && provider) {
       setHasExistingKey(provider.hasApiKey)
-      setApiKey('')
+      setApiKey("")
       setShowKey(false)
     }
   }, [open, provider])
 
   if (!provider) return null
 
-  const info = PROVIDER_INFO[provider.id] || { placeholder: '...', envVar: '' }
+  const info = PROVIDER_INFO[provider.id] || { placeholder: "...", envVar: "" }
 
-  async function handleSave() {
+  async function handleSave(): Promise<void> {
     if (!apiKey.trim()) return
     if (!provider) return
-    
-    console.log('[ApiKeyDialog] Saving API key for provider:', provider.id)
+
+    console.log("[ApiKeyDialog] Saving API key for provider:", provider.id)
     setSaving(true)
     try {
       await saveApiKey(provider.id, apiKey.trim())
-      console.log('[ApiKeyDialog] API key saved successfully')
+      console.log("[ApiKeyDialog] API key saved successfully")
       onOpenChange(false)
     } catch (e) {
-      console.error('[ApiKeyDialog] Failed to save API key:', e)
+      console.error("[ApiKeyDialog] Failed to save API key:", e)
     } finally {
       setSaving(false)
     }
   }
 
-  async function handleDelete() {
+  async function handleDelete(): Promise<void> {
     if (!provider) return
     setDeleting(true)
     try {
       await deleteApiKey(provider.id)
       onOpenChange(false)
     } catch (e) {
-      console.error('Failed to delete API key:', e)
+      console.error("Failed to delete API key:", e)
     } finally {
       setDeleting(false)
     }
@@ -85,10 +89,9 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
             {hasExistingKey ? `Update ${provider.name} API Key` : `Add ${provider.name} API Key`}
           </DialogTitle>
           <DialogDescription>
-            {hasExistingKey 
-              ? 'Enter a new API key to replace the existing one, or remove it.'
-              : `Enter your ${provider.name} API key to use their models.`
-            }
+            {hasExistingKey
+              ? "Enter a new API key to replace the existing one, or remove it."
+              : `Enter your ${provider.name} API key to use their models.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -96,10 +99,10 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
           <div className="space-y-2">
             <div className="relative">
               <Input
-                type={showKey ? 'text' : 'password'}
+                type={showKey ? "text" : "password"}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
-                placeholder={hasExistingKey ? '••••••••••••••••' : info.placeholder}
+                placeholder={hasExistingKey ? "••••••••••••••••" : info.placeholder}
                 className="pr-10"
                 autoFocus
               />
@@ -140,16 +143,8 @@ export function ApiKeyDialog({ open, onOpenChange, provider }: ApiKeyDialogProps
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button
-              type="button"
-              onClick={handleSave}
-              disabled={!apiKey.trim() || saving}
-            >
-              {saving ? (
-                <Loader2 className="size-4 animate-spin" />
-              ) : (
-                'Save'
-              )}
+            <Button type="button" onClick={handleSave} disabled={!apiKey.trim() || saving}>
+              {saving ? <Loader2 className="size-4 animate-spin" /> : "Save"}
             </Button>
           </div>
         </div>

@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron'
-import type { Thread, ModelConfig, Provider, StreamEvent, HITLDecision } from '../main/types'
+import { contextBridge, ipcRenderer } from "electron"
+import type { Thread, ModelConfig, Provider, StreamEvent, HITLDecision } from "../main/types"
 
 // Simple electron API - replaces @electron-toolkit/preload
 const electronAPI = {
@@ -34,13 +34,13 @@ const api = {
 
       const handler = (_: unknown, data: StreamEvent): void => {
         onEvent(data)
-        if (data.type === 'done' || data.type === 'error') {
+        if (data.type === "done" || data.type === "error") {
           ipcRenderer.removeListener(channel, handler)
         }
       }
 
       ipcRenderer.on(channel, handler)
-      ipcRenderer.send('agent:invoke', { threadId, message, modelId })
+      ipcRenderer.send("agent:invoke", { threadId, message, modelId })
 
       // Return cleanup function
       return () => {
@@ -59,7 +59,7 @@ const api = {
 
       const handler = (_: unknown, data: StreamEvent): void => {
         onEvent(data)
-        if (data.type === 'done' || data.type === 'error') {
+        if (data.type === "done" || data.type === "error") {
           ipcRenderer.removeListener(channel, handler)
         }
       }
@@ -68,9 +68,9 @@ const api = {
 
       // If we have a command, it might be a resume/retry
       if (command) {
-        ipcRenderer.send('agent:resume', { threadId, command, modelId })
+        ipcRenderer.send("agent:resume", { threadId, command, modelId })
       } else {
-        ipcRenderer.send('agent:invoke', { threadId, message, modelId })
+        ipcRenderer.send("agent:invoke", { threadId, message, modelId })
       }
 
       // Return cleanup function
@@ -87,13 +87,13 @@ const api = {
 
       const handler = (_: unknown, data: StreamEvent): void => {
         onEvent?.(data)
-        if (data.type === 'done' || data.type === 'error') {
+        if (data.type === "done" || data.type === "error") {
           ipcRenderer.removeListener(channel, handler)
         }
       }
 
       ipcRenderer.on(channel, handler)
-      ipcRenderer.send('agent:interrupt', { threadId, decision })
+      ipcRenderer.send("agent:interrupt", { threadId, decision })
 
       // Return cleanup function
       return () => {
@@ -101,53 +101,53 @@ const api = {
       }
     },
     cancel: (threadId: string): Promise<void> => {
-      return ipcRenderer.invoke('agent:cancel', { threadId })
+      return ipcRenderer.invoke("agent:cancel", { threadId })
     }
   },
   threads: {
     list: (): Promise<Thread[]> => {
-      return ipcRenderer.invoke('threads:list')
+      return ipcRenderer.invoke("threads:list")
     },
     get: (threadId: string): Promise<Thread | null> => {
-      return ipcRenderer.invoke('threads:get', threadId)
+      return ipcRenderer.invoke("threads:get", threadId)
     },
     create: (metadata?: Record<string, unknown>): Promise<Thread> => {
-      return ipcRenderer.invoke('threads:create', metadata)
+      return ipcRenderer.invoke("threads:create", metadata)
     },
     update: (threadId: string, updates: Partial<Thread>): Promise<Thread> => {
-      return ipcRenderer.invoke('threads:update', { threadId, updates })
+      return ipcRenderer.invoke("threads:update", { threadId, updates })
     },
     delete: (threadId: string): Promise<void> => {
-      return ipcRenderer.invoke('threads:delete', threadId)
+      return ipcRenderer.invoke("threads:delete", threadId)
     },
     getHistory: (threadId: string): Promise<unknown[]> => {
-      return ipcRenderer.invoke('threads:history', threadId)
+      return ipcRenderer.invoke("threads:history", threadId)
     },
     generateTitle: (message: string): Promise<string> => {
-      return ipcRenderer.invoke('threads:generateTitle', message)
+      return ipcRenderer.invoke("threads:generateTitle", message)
     }
   },
   models: {
     list: (): Promise<ModelConfig[]> => {
-      return ipcRenderer.invoke('models:list')
+      return ipcRenderer.invoke("models:list")
     },
     listProviders: (): Promise<Provider[]> => {
-      return ipcRenderer.invoke('models:listProviders')
+      return ipcRenderer.invoke("models:listProviders")
     },
     getDefault: (): Promise<string> => {
-      return ipcRenderer.invoke('models:getDefault')
+      return ipcRenderer.invoke("models:getDefault")
     },
     setDefault: (modelId: string): Promise<void> => {
-      return ipcRenderer.invoke('models:setDefault', modelId)
+      return ipcRenderer.invoke("models:setDefault", modelId)
     },
     setApiKey: (provider: string, apiKey: string): Promise<void> => {
-      return ipcRenderer.invoke('models:setApiKey', { provider, apiKey })
+      return ipcRenderer.invoke("models:setApiKey", { provider, apiKey })
     },
     getApiKey: (provider: string): Promise<string | null> => {
-      return ipcRenderer.invoke('models:getApiKey', provider)
+      return ipcRenderer.invoke("models:getApiKey", provider)
     },
     deleteApiKey: (provider: string): Promise<void> => {
-      return ipcRenderer.invoke('models:deleteApiKey', provider)
+      return ipcRenderer.invoke("models:deleteApiKey", provider)
     }
   },
   settings: {
@@ -160,15 +160,17 @@ const api = {
   },
   workspace: {
     get: (threadId?: string): Promise<string | null> => {
-      return ipcRenderer.invoke('workspace:get', threadId)
+      return ipcRenderer.invoke("workspace:get", threadId)
     },
     set: (threadId: string | undefined, path: string | null): Promise<string | null> => {
-      return ipcRenderer.invoke('workspace:set', { threadId, path })
+      return ipcRenderer.invoke("workspace:set", { threadId, path })
     },
     select: (threadId?: string): Promise<string | null> => {
-      return ipcRenderer.invoke('workspace:select', threadId)
+      return ipcRenderer.invoke("workspace:select", threadId)
     },
-    loadFromDisk: (threadId: string): Promise<{
+    loadFromDisk: (
+      threadId: string
+    ): Promise<{
       success: boolean
       files: Array<{
         path: string
@@ -179,25 +181,31 @@ const api = {
       workspacePath?: string
       error?: string
     }> => {
-      return ipcRenderer.invoke('workspace:loadFromDisk', { threadId })
+      return ipcRenderer.invoke("workspace:loadFromDisk", { threadId })
     },
-    readFile: (threadId: string, filePath: string): Promise<{
+    readFile: (
+      threadId: string,
+      filePath: string
+    ): Promise<{
       success: boolean
       content?: string
       size?: number
       modified_at?: string
       error?: string
     }> => {
-      return ipcRenderer.invoke('workspace:readFile', { threadId, filePath })
+      return ipcRenderer.invoke("workspace:readFile", { threadId, filePath })
     },
-    readBinaryFile: (threadId: string, filePath: string): Promise<{
+    readBinaryFile: (
+      threadId: string,
+      filePath: string
+    ): Promise<{
       success: boolean
       content?: string
       size?: number
       modified_at?: string
       error?: string
     }> => {
-      return ipcRenderer.invoke('workspace:readBinaryFile', { threadId, filePath })
+      return ipcRenderer.invoke("workspace:readBinaryFile", { threadId, filePath })
     },
     // Listen for file changes in the workspace
     onFilesChanged: (
@@ -206,10 +214,10 @@ const api = {
       const handler = (_: unknown, data: { threadId: string; workspacePath: string }): void => {
         callback(data)
       }
-      ipcRenderer.on('workspace:files-changed', handler)
+      ipcRenderer.on("workspace:files-changed", handler)
       // Return cleanup function
       return () => {
-        ipcRenderer.removeListener('workspace:files-changed', handler)
+        ipcRenderer.removeListener("workspace:files-changed", handler)
       }
     }
   }
@@ -218,8 +226,8 @@ const api = {
 // Use `contextBridge` APIs to expose Electron APIs to renderer
 if (process.contextIsolated) {
   try {
-    contextBridge.exposeInMainWorld('electron', electronAPI)
-    contextBridge.exposeInMainWorld('api', api)
+    contextBridge.exposeInMainWorld("electron", electronAPI)
+    contextBridge.exposeInMainWorld("api", api)
   } catch (error) {
     console.error(error)
   }

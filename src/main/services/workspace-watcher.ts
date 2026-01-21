@@ -1,6 +1,6 @@
-import * as fs from 'fs'
-import * as path from 'path'
-import { BrowserWindow } from 'electron'
+import * as fs from "fs"
+import * as path from "path"
+import { BrowserWindow } from "electron"
 
 // Store active watchers by thread ID
 const activeWatchers = new Map<string, fs.FSWatcher>()
@@ -36,7 +36,7 @@ export function startWatching(threadId: string, workspacePath: string): void {
       // Skip hidden files and common non-project files
       if (filename) {
         const parts = filename.split(path.sep)
-        if (parts.some((p) => p.startsWith('.') || p === 'node_modules')) {
+        if (parts.some((p) => p.startsWith(".") || p === "node_modules")) {
           return
         }
       }
@@ -57,7 +57,7 @@ export function startWatching(threadId: string, workspacePath: string): void {
       debounceTimers.set(threadId, timer)
     })
 
-    watcher.on('error', (error) => {
+    watcher.on("error", (error) => {
       console.error(`[WorkspaceWatcher] Error watching ${workspacePath}:`, error)
       stopWatching(threadId)
     })
@@ -103,7 +103,7 @@ function notifyRenderer(threadId: string, workspacePath: string): void {
   const windows = BrowserWindow.getAllWindows()
 
   for (const win of windows) {
-    win.webContents.send('workspace:files-changed', {
+    win.webContents.send("workspace:files-changed", {
       threadId,
       workspacePath
     })

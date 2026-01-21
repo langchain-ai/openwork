@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect, useMemo } from 'react'
+import { useState, useRef, useCallback, useEffect, useMemo } from "react"
 import {
   ListTodo,
   FolderTree,
@@ -22,13 +22,13 @@ import {
   FileJson,
   Image,
   FileType
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { useAppStore } from '@/lib/store'
-import { useThreadState } from '@/lib/thread-context'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import type { Todo } from '@/types'
+} from "lucide-react"
+import { cn } from "@/lib/utils"
+import { useAppStore } from "@/lib/store"
+import { useThreadState } from "@/lib/thread-context"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import type { Todo } from "@/types"
 
 const HEADER_HEIGHT = 40 // px
 const HANDLE_HEIGHT = 6 // px
@@ -58,8 +58,8 @@ function SectionHeader({
     >
       <ChevronRight
         className={cn(
-          'size-3.5 text-muted-foreground transition-transform duration-200',
-          isOpen && 'rotate-90'
+          "size-3.5 text-muted-foreground transition-transform duration-200",
+          isOpen && "rotate-90"
         )}
       />
       <Icon className="size-4" />
@@ -90,16 +90,16 @@ function ResizeHandle({ onDrag }: ResizeHandleProps): React.JSX.Element {
       }
 
       const handleMouseUp = (): void => {
-        document.removeEventListener('mousemove', handleMouseMove)
-        document.removeEventListener('mouseup', handleMouseUp)
-        document.body.style.cursor = ''
-        document.body.style.userSelect = ''
+        document.removeEventListener("mousemove", handleMouseMove)
+        document.removeEventListener("mouseup", handleMouseUp)
+        document.body.style.cursor = ""
+        document.body.style.userSelect = ""
       }
 
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = 'row-resize'
-      document.body.style.userSelect = 'none'
+      document.addEventListener("mousemove", handleMouseMove)
+      document.addEventListener("mouseup", handleMouseUp)
+      document.body.style.cursor = "row-resize"
+      document.body.style.userSelect = "none"
     },
     [onDrag]
   )
@@ -291,8 +291,8 @@ export function RightPanel(): React.JSX.Element {
     const handleMouseUp = (): void => {
       dragStartHeights.current = null
     }
-    document.addEventListener('mouseup', handleMouseUp)
-    return () => document.removeEventListener('mouseup', handleMouseUp)
+    document.addEventListener("mouseup", handleMouseUp)
+    return () => document.removeEventListener("mouseup", handleMouseUp)
   }, [])
 
   // Reset heights when panels open/close to redistribute
@@ -375,27 +375,27 @@ export function RightPanel(): React.JSX.Element {
 const STATUS_CONFIG = {
   pending: {
     icon: Circle,
-    badge: 'outline' as const,
-    label: 'PENDING',
-    color: 'text-muted-foreground'
+    badge: "outline" as const,
+    label: "PENDING",
+    color: "text-muted-foreground"
   },
   in_progress: {
     icon: Clock,
-    badge: 'info' as const,
-    label: 'IN PROGRESS',
-    color: 'text-status-info'
+    badge: "info" as const,
+    label: "IN PROGRESS",
+    color: "text-status-info"
   },
   completed: {
     icon: CheckCircle2,
-    badge: 'nominal' as const,
-    label: 'DONE',
-    color: 'text-status-nominal'
+    badge: "nominal" as const,
+    label: "DONE",
+    color: "text-status-nominal"
   },
   cancelled: {
     icon: XCircle,
-    badge: 'critical' as const,
-    label: 'CANCELLED',
-    color: 'text-muted-foreground'
+    badge: "critical" as const,
+    label: "CANCELLED",
+    color: "text-muted-foreground"
   }
 }
 
@@ -415,10 +415,10 @@ function TasksContent(): React.JSX.Element {
     )
   }
 
-  const inProgress = todos.filter((t) => t.status === 'in_progress')
-  const pending = todos.filter((t) => t.status === 'pending')
-  const completed = todos.filter((t) => t.status === 'completed')
-  const cancelled = todos.filter((t) => t.status === 'cancelled')
+  const inProgress = todos.filter((t) => t.status === "in_progress")
+  const pending = todos.filter((t) => t.status === "pending")
+  const completed = todos.filter((t) => t.status === "completed")
+  const cancelled = todos.filter((t) => t.status === "cancelled")
 
   // Completed section includes both completed and cancelled
   const doneItems = [...completed, ...cancelled]
@@ -490,17 +490,17 @@ function TasksContent(): React.JSX.Element {
 function TaskItem({ todo }: { todo: Todo }): React.JSX.Element {
   const config = STATUS_CONFIG[todo.status]
   const Icon = config.icon
-  const isDone = todo.status === 'completed' || todo.status === 'cancelled'
+  const isDone = todo.status === "completed" || todo.status === "cancelled"
 
   return (
     <div
       className={cn(
-        'flex items-start gap-3 rounded-sm border border-border p-3',
-        isDone && 'opacity-50'
+        "flex items-start gap-3 rounded-sm border border-border p-3",
+        isDone && "opacity-50"
       )}
     >
-      <Icon className={cn('size-4 shrink-0 mt-0.5', config.color)} />
-      <span className={cn('flex-1 text-sm', isDone && 'line-through')}>{todo.content}</span>
+      <Icon className={cn("size-4 shrink-0 mt-0.5", config.color)} />
+      <span className={cn("flex-1 text-sm", isDone && "line-through")}>{todo.content}</span>
       <Badge variant={config.badge} className="shrink-0 text-[10px]">
         {config.label}
       </Badge>
@@ -545,7 +545,7 @@ function FilesContent(): React.JSX.Element {
     const cleanup = window.api.workspace.onFilesChanged(async (data) => {
       // Only reload if the event is for the current thread
       if (data.threadId === currentThreadId) {
-        console.log('[FilesContent] Files changed, reloading...', data)
+        console.log("[FilesContent] Files changed, reloading...", data)
         const result = await window.api.workspace.loadFromDisk(currentThreadId)
         if (result.success && result.files) {
           setWorkspaceFiles(result.files)
@@ -572,7 +572,7 @@ function FilesContent(): React.JSX.Element {
         }
       }
     } catch (e) {
-      console.error('[FilesContent] Select folder error:', e)
+      console.error("[FilesContent] Select folder error:", e)
     } finally {
       setSyncing(false)
     }
@@ -590,7 +590,7 @@ function FilesContent(): React.JSX.Element {
     }
 
     // syncToDisk is not yet implemented
-    console.warn('[FilesContent] syncToDisk is not yet implemented')
+    console.warn("[FilesContent] syncToDisk is not yet implemented")
   }
 
   return (
@@ -601,7 +601,7 @@ function FilesContent(): React.JSX.Element {
           className="text-[10px] text-muted-foreground truncate flex-1"
           title={workspacePath || undefined}
         >
-          {workspacePath ? workspacePath.split('/').pop() : 'No folder linked'}
+          {workspacePath ? workspacePath.split("/").pop() : "No folder linked"}
         </span>
         <Button
           variant="ghost"
@@ -613,10 +613,10 @@ function FilesContent(): React.JSX.Element {
             workspaceFiles.length > 0
               ? workspacePath
                 ? `Sync to ${workspacePath}`
-                : 'Sync files to disk'
+                : "Sync files to disk"
               : workspacePath
                 ? `Change folder`
-                : 'Link sync folder'
+                : "Link sync folder"
           }
         >
           {syncing ? (
@@ -629,7 +629,7 @@ function FilesContent(): React.JSX.Element {
             <FolderSync className="size-3" />
           )}
           <span className="ml-1">
-            {workspaceFiles.length > 0 ? 'Sync' : workspacePath ? 'Change' : 'Link'}
+            {workspaceFiles.length > 0 ? "Sync" : workspacePath ? "Change" : "Link"}
           </span>
         </Button>
       </div>
@@ -641,7 +641,7 @@ function FilesContent(): React.JSX.Element {
           <span>No workspace files</span>
           <span className="text-xs mt-1">
             {workspacePath
-              ? `Linked to ${workspacePath.split('/').pop()}`
+              ? `Linked to ${workspacePath.split("/").pop()}`
               : 'Click "Link" to set a sync folder'}
           </span>
         </div>
@@ -686,8 +686,8 @@ function buildFileTree(files: FileInfo[]): TreeNode[] {
 
   for (const file of sortedFiles) {
     // Normalize path - remove leading slash
-    const normalizedPath = file.path.startsWith('/') ? file.path.slice(1) : file.path
-    const parts = normalizedPath.split('/')
+    const normalizedPath = file.path.startsWith("/") ? file.path.slice(1) : file.path
+    const parts = normalizedPath.split("/")
     const fileName = parts[parts.length - 1]
 
     const node: TreeNode = {
@@ -704,7 +704,7 @@ function buildFileTree(files: FileInfo[]): TreeNode[] {
       nodeMap.set(normalizedPath, node)
     } else {
       // Nested item - find or create parent directories
-      let currentPath = ''
+      let currentPath = ""
       let parentChildren = root
 
       for (let i = 0; i < parts.length - 1; i++) {
@@ -715,7 +715,7 @@ function buildFileTree(files: FileInfo[]): TreeNode[] {
           // Create implicit directory node
           parentNode = {
             name: parts[i],
-            path: '/' + currentPath,
+            path: "/" + currentPath,
             is_dir: true,
             children: []
           }
@@ -815,7 +815,7 @@ function FileTreeNode({
       <div
         onClick={handleClick}
         className={cn(
-          'flex items-center gap-1.5 py-1 pr-3 text-xs hover:bg-background-interactive cursor-pointer'
+          "flex items-center gap-1.5 py-1 pr-3 text-xs hover:bg-background-interactive cursor-pointer"
         )}
         style={{ paddingLeft }}
       >
@@ -881,38 +881,38 @@ function FileIcon({
   }
 
   // Get file extension
-  const ext = name.includes('.') ? name.split('.').pop()?.toLowerCase() : ''
+  const ext = name.includes(".") ? name.split(".").pop()?.toLowerCase() : ""
 
   // Map extensions to icons and colors
   switch (ext) {
-    case 'ts':
-    case 'tsx':
+    case "ts":
+    case "tsx":
       return <FileCode className="size-3.5 text-blue-400 shrink-0" />
-    case 'js':
-    case 'jsx':
+    case "js":
+    case "jsx":
       return <FileCode className="size-3.5 text-yellow-400 shrink-0" />
-    case 'json':
+    case "json":
       return <FileJson className="size-3.5 text-yellow-600 shrink-0" />
-    case 'md':
-    case 'mdx':
+    case "md":
+    case "mdx":
       return <FileText className="size-3.5 text-muted-foreground shrink-0" />
-    case 'py':
+    case "py":
       return <FileCode className="size-3.5 text-green-400 shrink-0" />
-    case 'css':
-    case 'scss':
-    case 'sass':
+    case "css":
+    case "scss":
+    case "sass":
       return <FileCode className="size-3.5 text-pink-400 shrink-0" />
-    case 'html':
+    case "html":
       return <FileCode className="size-3.5 text-orange-400 shrink-0" />
-    case 'svg':
-    case 'png':
-    case 'jpg':
-    case 'jpeg':
-    case 'gif':
-    case 'webp':
+    case "svg":
+    case "png":
+    case "jpg":
+    case "jpeg":
+    case "gif":
+    case "webp":
       return <Image className="size-3.5 text-purple-400 shrink-0" />
-    case 'yml':
-    case 'yaml':
+    case "yml":
+    case "yaml":
       return <FileType className="size-3.5 text-red-400 shrink-0" />
     default:
       return <File className="size-3.5 text-muted-foreground shrink-0" />
@@ -943,11 +943,11 @@ function AgentsContent(): React.JSX.Element {
             <span className="flex-1">{agent.name}</span>
             <span
               className={cn(
-                'text-[10px] px-1.5 py-0.5 rounded',
-                agent.status === 'pending' && 'bg-muted text-muted-foreground',
-                agent.status === 'running' && 'bg-status-info/20 text-status-info',
-                agent.status === 'completed' && 'bg-status-nominal/20 text-status-nominal',
-                agent.status === 'failed' && 'bg-status-critical/20 text-status-critical'
+                "text-[10px] px-1.5 py-0.5 rounded",
+                agent.status === "pending" && "bg-muted text-muted-foreground",
+                agent.status === "running" && "bg-status-info/20 text-status-info",
+                agent.status === "completed" && "bg-status-nominal/20 text-status-nominal",
+                agent.status === "failed" && "bg-status-critical/20 text-status-critical"
               )}
             >
               {agent.status.toUpperCase()}

@@ -1,15 +1,20 @@
-import { Music, Video } from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { Music, Video } from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface MediaViewerProps {
   filePath: string
   base64Content: string
   mimeType: string
-  mediaType: 'video' | 'audio'
+  mediaType: "video" | "audio"
 }
 
-export function MediaViewer({ filePath, base64Content, mimeType, mediaType }: MediaViewerProps) {
-  const fileName = filePath.split('/').pop() || filePath
+export function MediaViewer({
+  filePath,
+  base64Content,
+  mimeType,
+  mediaType
+}: MediaViewerProps): React.JSX.Element {
+  const fileName = filePath.split("/").pop() || filePath
   const mediaUrl = `data:${mimeType};base64,${base64Content}`
 
   return (
@@ -24,7 +29,7 @@ export function MediaViewer({ filePath, base64Content, mimeType, mediaType }: Me
       {/* Media player */}
       <ScrollArea className="flex-1 min-h-0">
         <div className="flex flex-col items-center justify-center min-h-full p-8 gap-6">
-          {mediaType === 'video' ? (
+          {mediaType === "video" ? (
             <>
               <Video className="size-16 text-muted-foreground/30" />
               <video
@@ -47,11 +52,7 @@ export function MediaViewer({ filePath, base64Content, mimeType, mediaType }: Me
                   <div className="text-sm text-muted-foreground">Audio File</div>
                 </div>
               </div>
-              <audio
-                controls
-                className="w-full max-w-md"
-                preload="metadata"
-              >
+              <audio controls className="w-full max-w-md" preload="metadata">
                 <source src={mediaUrl} type={mimeType} />
                 Your browser does not support the audio tag.
               </audio>

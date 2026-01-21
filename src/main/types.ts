@@ -1,5 +1,60 @@
 // Thread types matching langgraph-api
-export type ThreadStatus = 'idle' | 'busy' | 'interrupted' | 'error'
+export type ThreadStatus = "idle" | "busy" | "interrupted" | "error"
+
+// =============================================================================
+// IPC Handler Parameter Types
+// =============================================================================
+
+// Agent IPC
+export interface AgentInvokeParams {
+  threadId: string
+  message: string
+  modelId?: string
+}
+
+export interface AgentResumeParams {
+  threadId: string
+  command: { resume?: { decision?: string } }
+  modelId?: string
+}
+
+export interface AgentInterruptParams {
+  threadId: string
+  decision: HITLDecision
+}
+
+export interface AgentCancelParams {
+  threadId: string
+}
+
+// Thread IPC
+export interface ThreadUpdateParams {
+  threadId: string
+  updates: Partial<Thread>
+}
+
+// Workspace IPC
+export interface WorkspaceSetParams {
+  threadId?: string
+  path: string | null
+}
+
+export interface WorkspaceLoadParams {
+  threadId: string
+}
+
+export interface WorkspaceFileParams {
+  threadId: string
+  filePath: string
+}
+
+// Model IPC
+export interface SetApiKeyParams {
+  provider: string
+  apiKey: string
+}
+
+// =============================================================================
 
 export interface Thread {
   thread_id: string
@@ -12,7 +67,7 @@ export interface Thread {
 }
 
 // Run types
-export type RunStatus = 'pending' | 'running' | 'error' | 'success' | 'interrupted'
+export type RunStatus = "pending" | "running" | "error" | "success" | "interrupted"
 
 export interface Run {
   run_id: string
@@ -25,7 +80,7 @@ export interface Run {
 }
 
 // Provider configuration
-export type ProviderId = 'anthropic' | 'openai' | 'google' | 'deepseek' | 'ollama'
+export type ProviderId = "anthropic" | "openai" | "google" | "deepseek" | "ollama"
 
 export interface Provider {
   id: ProviderId
@@ -48,34 +103,34 @@ export interface Subagent {
   id: string
   name: string
   description: string
-  status: 'pending' | 'running' | 'completed' | 'failed'
+  status: "pending" | "running" | "completed" | "failed"
   startedAt?: Date
   completedAt?: Date
 }
 
 // Stream events from agent
 export type StreamEvent =
-  | { type: 'message'; message: Message }
-  | { type: 'tool_call'; toolCall: ToolCall }
-  | { type: 'tool_result'; toolResult: ToolResult }
-  | { type: 'interrupt'; request: HITLRequest }
-  | { type: 'token'; token: string }
-  | { type: 'todos'; todos: Todo[] }
-  | { type: 'workspace'; files: FileInfo[]; path: string }
-  | { type: 'subagents'; subagents: Subagent[] }
-  | { type: 'done'; result: unknown }
-  | { type: 'error'; error: string }
+  | { type: "message"; message: Message }
+  | { type: "tool_call"; toolCall: ToolCall }
+  | { type: "tool_result"; toolResult: ToolResult }
+  | { type: "interrupt"; request: HITLRequest }
+  | { type: "token"; token: string }
+  | { type: "todos"; todos: Todo[] }
+  | { type: "workspace"; files: FileInfo[]; path: string }
+  | { type: "subagents"; subagents: Subagent[] }
+  | { type: "done"; result: unknown }
+  | { type: "error"; error: string }
 
 export interface Message {
   id: string
-  role: 'user' | 'assistant' | 'system' | 'tool'
+  role: "user" | "assistant" | "system" | "tool"
   content: string | ContentBlock[]
   tool_calls?: ToolCall[]
   created_at: Date
 }
 
 export interface ContentBlock {
-  type: 'text' | 'image' | 'tool_use' | 'tool_result'
+  type: "text" | "image" | "tool_use" | "tool_result"
   text?: string
   tool_use_id?: string
   name?: string
@@ -99,11 +154,11 @@ export interface ToolResult {
 export interface HITLRequest {
   id: string
   tool_call: ToolCall
-  allowed_decisions: HITLDecision['type'][]
+  allowed_decisions: HITLDecision["type"][]
 }
 
 export interface HITLDecision {
-  type: 'approve' | 'reject' | 'edit'
+  type: "approve" | "reject" | "edit"
   tool_call_id: string
   edited_args?: Record<string, unknown>
   feedback?: string
@@ -113,7 +168,7 @@ export interface HITLDecision {
 export interface Todo {
   id: string
   content: string
-  status: 'pending' | 'in_progress' | 'completed' | 'cancelled'
+  status: "pending" | "in_progress" | "completed" | "cancelled"
 }
 
 // File types (from deepagentsjs backends)

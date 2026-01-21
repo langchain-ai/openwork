@@ -7,14 +7,14 @@ import {
   Sparkles,
   Search,
   FileCheck
-} from 'lucide-react'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@/lib/utils'
-import { useAppStore } from '@/lib/store'
-import { useThreadState } from '@/lib/thread-context'
-import type { Subagent } from '@/types'
+} from "lucide-react"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Badge } from "@/components/ui/badge"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { cn } from "@/lib/utils"
+import { useAppStore } from "@/lib/store"
+import { useThreadState } from "@/lib/thread-context"
+import type { Subagent } from "@/types"
 
 // Icon component for subagent type (avoid creating components during render)
 function SubagentTypeIcon({
@@ -25,11 +25,11 @@ function SubagentTypeIcon({
   className?: string
 }): React.JSX.Element {
   switch (subagentType) {
-    case 'correctness-checker':
+    case "correctness-checker":
       return <FileCheck className={className} />
-    case 'final-reviewer':
+    case "final-reviewer":
       return <Search className={className} />
-    case 'research':
+    case "research":
       return <Search className={className} />
     default:
       return <Sparkles className={className} />
@@ -39,16 +39,16 @@ function SubagentTypeIcon({
 // Get badge variant for subagent type
 function getSubagentTypeBadge(subagentType?: string): string {
   switch (subagentType) {
-    case 'correctness-checker':
-      return 'CHECKER'
-    case 'final-reviewer':
-      return 'REVIEWER'
-    case 'research':
-      return 'RESEARCH'
-    case 'general-purpose':
-      return 'GENERAL'
+    case "correctness-checker":
+      return "CHECKER"
+    case "final-reviewer":
+      return "REVIEWER"
+    case "research":
+      return "RESEARCH"
+    case "general-purpose":
+      return "GENERAL"
     default:
-      return subagentType?.toUpperCase() || 'TASK'
+      return subagentType?.toUpperCase() || "TASK"
   }
 }
 
@@ -58,8 +58,8 @@ export function SubagentPanel(): React.JSX.Element {
   const subagents = threadState?.subagents ?? []
 
   // Count by status
-  const runningCount = subagents.filter((s) => s.status === 'running').length
-  const completedCount = subagents.filter((s) => s.status === 'completed').length
+  const runningCount = subagents.filter((s) => s.status === "running").length
+  const completedCount = subagents.filter((s) => s.status === "completed").length
 
   return (
     <div className="flex flex-col h-full">
@@ -110,18 +110,18 @@ export function SubagentPanel(): React.JSX.Element {
 function SubagentCard({ subagent }: { subagent: Subagent }): React.JSX.Element {
   const getStatusConfig = (): {
     icon: React.ElementType
-    badge: 'outline' | 'info' | 'nominal' | 'critical'
+    badge: "outline" | "info" | "nominal" | "critical"
     label: string
   } => {
     switch (subagent.status) {
-      case 'pending':
-        return { icon: Clock, badge: 'outline' as const, label: 'PENDING' }
-      case 'running':
-        return { icon: Loader2, badge: 'info' as const, label: 'RUNNING' }
-      case 'completed':
-        return { icon: CheckCircle2, badge: 'nominal' as const, label: 'DONE' }
-      case 'failed':
-        return { icon: XCircle, badge: 'critical' as const, label: 'FAILED' }
+      case "pending":
+        return { icon: Clock, badge: "outline" as const, label: "PENDING" }
+      case "running":
+        return { icon: Loader2, badge: "info" as const, label: "RUNNING" }
+      case "completed":
+        return { icon: CheckCircle2, badge: "nominal" as const, label: "DONE" }
+      case "failed":
+        return { icon: XCircle, badge: "critical" as const, label: "FAILED" }
     }
   }
 
@@ -142,22 +142,22 @@ function SubagentCard({ subagent }: { subagent: Subagent }): React.JSX.Element {
   const duration = getDuration()
 
   return (
-    <Card className={cn(subagent.status === 'running' && 'border-status-info/50')}>
+    <Card className={cn(subagent.status === "running" && "border-status-info/50")}>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-sm font-medium truncate">
             <SubagentTypeIcon
               subagentType={subagent.subagentType}
               className={cn(
-                'size-4 shrink-0',
-                subagent.status === 'running' ? 'text-status-info' : 'text-muted-foreground'
+                "size-4 shrink-0",
+                subagent.status === "running" ? "text-status-info" : "text-muted-foreground"
               )}
             />
             <span className="truncate">{subagent.name}</span>
           </CardTitle>
           <Badge variant={config.badge} className="shrink-0">
             <StatusIcon
-              className={cn('size-3 mr-1', subagent.status === 'running' && 'animate-spin')}
+              className={cn("size-3 mr-1", subagent.status === "running" && "animate-spin")}
             />
             {config.label}
           </Badge>
@@ -179,7 +179,7 @@ function SubagentCard({ subagent }: { subagent: Subagent }): React.JSX.Element {
           )}
           {duration && (
             <span className="flex items-center gap-1">
-              {subagent.status === 'running' ? (
+              {subagent.status === "running" ? (
                 <Loader2 className="size-3 animate-spin" />
               ) : (
                 <CheckCircle2 className="size-3" />

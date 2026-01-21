@@ -15,23 +15,21 @@ const badgeVariants = cva(
         nominal: "border-status-nominal/30 bg-status-nominal/15 text-status-nominal",
         warning: "border-status-warning/30 bg-status-warning/15 text-status-warning",
         critical: "border-status-critical/30 bg-status-critical/15 text-status-critical",
-        info: "border-status-info/30 bg-status-info/15 text-status-info",
-      },
+        info: "border-status-info/30 bg-status-info/15 text-status-info"
+      }
     },
     defaultVariants: {
-      variant: "default",
-    },
+      variant: "default"
+    }
   }
 )
 
 export interface BadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
-    VariantProps<typeof badgeVariants> {}
+  extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
 
 function Badge({ className, variant, ...props }: BadgeProps) {
-  return (
-    <div className={cn(badgeVariants({ variant }), className)} {...props} />
-  )
+  return <div className={cn(badgeVariants({ variant }), className)} {...props} />
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { Badge, badgeVariants }

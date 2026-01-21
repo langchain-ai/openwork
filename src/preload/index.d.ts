@@ -1,4 +1,4 @@
-import type { Thread, ModelConfig, StreamEvent, HITLDecision } from '../main/types'
+import type { Thread, ModelConfig, Provider, StreamEvent, HITLDecision } from "../main/types"
 
 interface ElectronAPI {
   ipcRenderer: {
@@ -15,7 +15,12 @@ interface ElectronAPI {
 
 interface CustomAPI {
   agent: {
-    invoke: (threadId: string, message: string, onEvent: (event: StreamEvent) => void) => () => void
+    invoke: (
+      threadId: string,
+      message: string,
+      onEvent: (event: StreamEvent) => void,
+      modelId?: string
+    ) => () => void
     streamAgent: (
       threadId: string,
       message: string,
@@ -67,14 +72,20 @@ interface CustomAPI {
       workspacePath?: string
       error?: string
     }>
-    readFile: (threadId: string, filePath: string) => Promise<{
+    readFile: (
+      threadId: string,
+      filePath: string
+    ) => Promise<{
       success: boolean
       content?: string
       size?: number
       modified_at?: string
       error?: string
     }>
-    readBinaryFile: (threadId: string, filePath: string) => Promise<{
+    readBinaryFile: (
+      threadId: string,
+      filePath: string
+    ) => Promise<{
       success: boolean
       content?: string
       size?: number

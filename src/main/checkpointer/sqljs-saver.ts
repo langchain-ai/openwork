@@ -1,7 +1,15 @@
-import initSqlJs, { Database as SqlJsDatabase } from 'sql.js'
-import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, renameSync, unlinkSync } from 'fs'
-import { dirname } from 'path'
-import type { RunnableConfig } from '@langchain/core/runnables'
+import initSqlJs, { Database as SqlJsDatabase } from "sql.js"
+import {
+  readFileSync,
+  writeFileSync,
+  existsSync,
+  mkdirSync,
+  statSync,
+  renameSync,
+  unlinkSync
+} from "fs"
+import { dirname } from "path"
+import type { RunnableConfig } from "@langchain/core/runnables"
 import {
   BaseCheckpointSaver,
   type Checkpoint,
@@ -11,7 +19,7 @@ import {
   type PendingWrite,
   type CheckpointMetadata,
   copyCheckpoint
-} from '@langchain/langgraph-checkpoint'
+} from "@langchain/langgraph-checkpoint"
 
 interface CheckpointRow {
   thread_id: string
@@ -66,17 +74,17 @@ export class SqlJsSaver extends BaseCheckpointSaver {
             `Creating fresh database to prevent memory issues.`
         )
         // Rename the old file for backup
-        const backupPath = this.dbPath + '.bak.' + Date.now()
+        const backupPath = this.dbPath + ".bak." + Date.now()
         try {
           renameSync(this.dbPath, backupPath)
           console.log(`[SqlJsSaver] Old database backed up to: ${backupPath}`)
         } catch (e) {
-          console.warn('[SqlJsSaver] Could not backup old database:', e)
+          console.warn("[SqlJsSaver] Could not backup old database:", e)
           // Try to delete instead
           try {
             unlinkSync(this.dbPath)
           } catch (e2) {
-            console.error('[SqlJsSaver] Could not delete old database:', e2)
+            console.error("[SqlJsSaver] Could not delete old database:", e2)
           }
         }
         this.db = new SQL.Database()
@@ -170,9 +178,9 @@ export class SqlJsSaver extends BaseCheckpointSaver {
 
   async getTuple(config: RunnableConfig): Promise<CheckpointTuple | undefined> {
     await this.initialize()
-    if (!this.db) throw new Error('Database not initialized')
+    if (!this.db) throw new Error("Database not initialized")
 
-    const { thread_id, checkpoint_ns = '', checkpoint_id } = config.configurable ?? {}
+    const { thread_id, checkpoint_ns = "", checkpoint_id } = config.configurable ?? {}
 
     let sql: string
     let params: (string | undefined)[]
@@ -217,13 +225,13 @@ export class SqlJsSaver extends BaseCheckpointSaver {
     const pendingWrites: [string, string, unknown][] = []
     while (writesStmt.step()) {
       const write = writesStmt.getAsObject() as unknown as WriteRow
-      const value = await this.serde.loadsTyped(write.type ?? 'json', write.value ?? '')
+      const value = await this.serde.loadsTyped(write.type ?? "json", write.value ?? "")
       pendingWrites.push([write.task_id, write.channel, value])
     }
     writesStmt.free()
 
     const checkpoint = (await this.serde.loadsTyped(
-      row.type ?? 'json',
+      row.type ?? "json",
       row.checkpoint
     )) as Checkpoint
 
@@ -241,7 +249,7 @@ export class SqlJsSaver extends BaseCheckpointSaver {
       checkpoint,
       config: finalConfig,
       metadata: (await this.serde.loadsTyped(
-        row.type ?? 'json',
+        row.type ?? "json",
         row.metadata
       )) as CheckpointMetadata,
       parentConfig: row.parent_checkpoint_id
@@ -262,11 +270,11 @@ export class SqlJsSaver extends BaseCheckpointSaver {
     options?: CheckpointListOptions
   ): AsyncGenerator<CheckpointTuple> {
     await this.initialize()
-    if (!this.db) throw new Error('Database not initialized')
+    if (!this.db) throw new Error("Database not initialized")
 
     const { limit, before } = options ?? {}
     const thread_id = config.configurable?.thread_id
-    const checkpoint_ns = config.configurable?.checkpoint_ns ?? ''
+    const checkpoint_ns = config.configurable?.checkpoint_ns ?? ""
 
     let sql = `
       SELECT thread_id, checkpoint_ns, checkpoint_id, parent_checkpoint_id, type, checkpoint, metadata
@@ -303,13 +311,13 @@ export class SqlJsSaver extends BaseCheckpointSaver {
       const pendingWrites: [string, string, unknown][] = []
       while (writesStmt.step()) {
         const write = writesStmt.getAsObject() as unknown as WriteRow
-        const value = await this.serde.loadsTyped(write.type ?? 'json', write.value ?? '')
+        const value = await this.serde.loadsTyped(write.type ?? "json", write.value ?? "")
         pendingWrites.push([write.task_id, write.channel, value])
       }
       writesStmt.free()
 
       const checkpoint = (await this.serde.loadsTyped(
-        row.type ?? 'json',
+        row.type ?? "json",
         row.checkpoint
       )) as Checkpoint
 
@@ -323,7 +331,7 @@ export class SqlJsSaver extends BaseCheckpointSaver {
         },
         checkpoint,
         metadata: (await this.serde.loadsTyped(
-          row.type ?? 'json',
+          row.type ?? "json",
           row.metadata
         )) as CheckpointMetadata,
         parentConfig: row.parent_checkpoint_id
@@ -348,14 +356,14 @@ export class SqlJsSaver extends BaseCheckpointSaver {
     metadata: CheckpointMetadata
   ): Promise<RunnableConfig> {
     await this.initialize()
-    if (!this.db) throw new Error('Database not initialized')
+    if (!this.db) throw new Error("Database not initialized")
 
     if (!config.configurable) {
-      throw new Error('Empty configuration supplied.')
+      throw new Error("Empty configuration supplied.")
     }
 
     const thread_id = config.configurable?.thread_id
-    const checkpoint_ns = config.configurable?.checkpoint_ns ?? ''
+    const checkpoint_ns = config.configurable?.checkpoint_ns ?? ""
     const parent_checkpoint_id = config.configurable?.checkpoint_id
 
     if (!thread_id) {
@@ -370,7 +378,7 @@ export class SqlJsSaver extends BaseCheckpointSaver {
     ])
 
     if (type1 !== type2) {
-      throw new Error('Failed to serialize checkpoint and metadata to the same type.')
+      throw new Error("Failed to serialize checkpoint and metadata to the same type.")
     }
 
     this.db.run(
@@ -401,18 +409,18 @@ export class SqlJsSaver extends BaseCheckpointSaver {
 
   async putWrites(config: RunnableConfig, writes: PendingWrite[], taskId: string): Promise<void> {
     await this.initialize()
-    if (!this.db) throw new Error('Database not initialized')
+    if (!this.db) throw new Error("Database not initialized")
 
     if (!config.configurable) {
-      throw new Error('Empty configuration supplied.')
+      throw new Error("Empty configuration supplied.")
     }
 
     if (!config.configurable?.thread_id) {
-      throw new Error('Missing thread_id field in config.configurable.')
+      throw new Error("Missing thread_id field in config.configurable.")
     }
 
     if (!config.configurable?.checkpoint_id) {
-      throw new Error('Missing checkpoint_id field in config.configurable.')
+      throw new Error("Missing checkpoint_id field in config.configurable.")
     }
 
     for (let idx = 0; idx < writes.length; idx++) {
@@ -425,7 +433,7 @@ export class SqlJsSaver extends BaseCheckpointSaver {
          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           config.configurable.thread_id,
-          config.configurable.checkpoint_ns ?? '',
+          config.configurable.checkpoint_ns ?? "",
           config.configurable.checkpoint_id,
           taskId,
           idx,
@@ -441,7 +449,7 @@ export class SqlJsSaver extends BaseCheckpointSaver {
 
   async deleteThread(threadId: string): Promise<void> {
     await this.initialize()
-    if (!this.db) throw new Error('Database not initialized')
+    if (!this.db) throw new Error("Database not initialized")
 
     this.db.run(`DELETE FROM checkpoints WHERE thread_id = ?`, [threadId])
     this.db.run(`DELETE FROM writes WHERE thread_id = ?`, [threadId])

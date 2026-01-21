@@ -1,5 +1,5 @@
-import { create } from 'zustand'
-import type { Thread, ModelConfig, Provider } from '@/types'
+import { create } from "zustand"
+import type { Thread, ModelConfig, Provider } from "@/types"
 
 interface AppState {
   // Threads
@@ -11,7 +11,7 @@ interface AppState {
   providers: Provider[]
 
   // Right panel state (UI state, not thread data)
-  rightPanelTab: 'todos' | 'files' | 'subagents'
+  rightPanelTab: "todos" | "files" | "subagents"
 
   // Settings dialog state
   settingsOpen: boolean
@@ -34,7 +34,7 @@ interface AppState {
   deleteApiKey: (providerId: string) => Promise<void>
 
   // Panel actions
-  setRightPanelTab: (tab: 'todos' | 'files' | 'subagents') => void
+  setRightPanelTab: (tab: "todos" | "files" | "subagents") => void
 
   // Settings actions
   setSettingsOpen: (open: boolean) => void
@@ -50,7 +50,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentThreadId: null,
   models: [],
   providers: [],
-  rightPanelTab: 'todos',
+  rightPanelTab: "todos",
   settingsOpen: false,
   sidebarCollapsed: false,
 
@@ -80,10 +80,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   deleteThread: async (threadId: string) => {
-    console.log('[Store] Deleting thread:', threadId)
+    console.log("[Store] Deleting thread:", threadId)
     try {
       await window.api.threads.delete(threadId)
-      console.log('[Store] Thread deleted from backend')
+      console.log("[Store] Thread deleted from backend")
 
       set((state) => {
         const threads = state.threads.filter((t) => t.thread_id !== threadId)
@@ -98,7 +98,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         }
       })
     } catch (error) {
-      console.error('[Store] Failed to delete thread:', error)
+      console.error("[Store] Failed to delete thread:", error)
     }
   },
 
@@ -114,7 +114,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       const generatedTitle = await window.api.threads.generateTitle(content)
       await get().updateThread(threadId, { title: generatedTitle })
     } catch (error) {
-      console.error('[Store] Failed to generate title:', error)
+      console.error("[Store] Failed to generate title:", error)
     }
   },
 
@@ -130,16 +130,16 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   setApiKey: async (providerId: string, apiKey: string) => {
-    console.log('[Store] setApiKey called:', { providerId, keyLength: apiKey.length })
+    console.log("[Store] setApiKey called:", { providerId, keyLength: apiKey.length })
     try {
       await window.api.models.setApiKey(providerId, apiKey)
-      console.log('[Store] API key saved via IPC')
+      console.log("[Store] API key saved via IPC")
       // Reload providers and models to update availability
       await get().loadProviders()
       await get().loadModels()
-      console.log('[Store] Providers and models reloaded')
+      console.log("[Store] Providers and models reloaded")
     } catch (e) {
-      console.error('[Store] Failed to set API key:', e)
+      console.error("[Store] Failed to set API key:", e)
       throw e
     }
   },
@@ -152,7 +152,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // Panel actions
-  setRightPanelTab: (tab: 'todos' | 'files' | 'subagents') => {
+  setRightPanelTab: (tab: "todos" | "files" | "subagents") => {
     set({ rightPanelTab: tab })
   },
 

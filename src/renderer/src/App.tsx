@@ -1,10 +1,10 @@
-import { useEffect, useState, useCallback, useRef, useLayoutEffect } from 'react'
-import { ThreadSidebar } from '@/components/sidebar/ThreadSidebar'
-import { TabbedPanel, TabBar } from '@/components/tabs'
-import { RightPanel } from '@/components/panels/RightPanel'
-import { ResizeHandle } from '@/components/ui/resizable'
-import { useAppStore } from '@/lib/store'
-import { ThreadProvider } from '@/lib/thread-context'
+import { useEffect, useState, useCallback, useRef, useLayoutEffect } from "react"
+import { ThreadSidebar } from "@/components/sidebar/ThreadSidebar"
+import { TabbedPanel, TabBar } from "@/components/tabs"
+import { RightPanel } from "@/components/panels/RightPanel"
+import { ResizeHandle } from "@/components/ui/resizable"
+import { useAppStore } from "@/lib/store"
+import { ThreadProvider } from "@/lib/thread-context"
 
 // Badge requires ~235 screen pixels to display with comfortable margin
 const BADGE_MIN_SCREEN_WIDTH = 235
@@ -42,13 +42,13 @@ function App(): React.JSX.Element {
         const extraPaddingScreen = Math.max(0, TRAFFIC_LIGHT_BOTTOM_SCREEN - titlebarScreenHeight)
         const extraPaddingCss = Math.round(extraPaddingScreen / detectedZoom)
 
-        document.documentElement.style.setProperty('--sidebar-safe-padding', `${extraPaddingCss}px`)
+        document.documentElement.style.setProperty("--sidebar-safe-padding", `${extraPaddingCss}px`)
       }
     }
 
     updateZoom()
-    window.addEventListener('resize', updateZoom)
-    return () => window.removeEventListener('resize', updateZoom)
+    window.addEventListener("resize", updateZoom)
+    return () => window.removeEventListener("resize", updateZoom)
   }, [])
 
   // Calculate zoom-compensated minimum width to always contain the badge
@@ -88,8 +88,8 @@ function App(): React.JSX.Element {
     const handleMouseUp = (): void => {
       dragStartWidths.current = null
     }
-    document.addEventListener('mouseup', handleMouseUp)
-    return () => document.removeEventListener('mouseup', handleMouseUp)
+    document.addEventListener("mouseup", handleMouseUp)
+    return () => document.removeEventListener("mouseup", handleMouseUp)
   }, [])
 
   useEffect(() => {
@@ -102,7 +102,7 @@ function App(): React.JSX.Element {
           await createThread()
         }
       } catch (error) {
-        console.error('Failed to initialize:', error)
+        console.error("Failed to initialize:", error)
       } finally {
         setIsLoading(false)
       }
@@ -120,68 +120,68 @@ function App(): React.JSX.Element {
 
   return (
     <ThreadProvider>
-    <div className="flex h-screen overflow-hidden bg-background">
-      {/* Fixed app badge - zoom independent position and size */}
-      <div
-        className="app-badge"
-        style={{
-          // Compensate both position and scale for zoom
-          // Target screen position: top 14px, left 82px (just past traffic lights)
-          top: `${14 / zoomLevel}px`,
-          left: `${82 / zoomLevel}px`,
-          transform: `scale(${1 / zoomLevel})`,
-          transformOrigin: 'top left'
-        }}
-      >
-        <span className="app-badge-name">OPENWORK</span>
-        <span className="app-badge-version">{__APP_VERSION__}</span>
-      </div>
+      <div className="flex h-screen overflow-hidden bg-background">
+        {/* Fixed app badge - zoom independent position and size */}
+        <div
+          className="app-badge"
+          style={{
+            // Compensate both position and scale for zoom
+            // Target screen position: top 14px, left 82px (just past traffic lights)
+            top: `${14 / zoomLevel}px`,
+            left: `${82 / zoomLevel}px`,
+            transform: `scale(${1 / zoomLevel})`,
+            transformOrigin: "top left"
+          }}
+        >
+          <span className="app-badge-name">OPENWORK</span>
+          <span className="app-badge-version">{__APP_VERSION__}</span>
+        </div>
 
-      {/* Left + Center column */}
-      <div className="flex flex-col flex-1 min-w-0">
-        {/* Titlebar row with tabs integrated */}
-        <div className="flex h-9 w-full shrink-0 app-drag-region bg-sidebar">
-          {/* Left section - spacer for traffic lights + badge (matches left sidebar width) */}
-          <div style={{ width: leftWidth }} className="shrink-0" />
+        {/* Left + Center column */}
+        <div className="flex flex-col flex-1 min-w-0">
+          {/* Titlebar row with tabs integrated */}
+          <div className="flex h-9 w-full shrink-0 app-drag-region bg-sidebar">
+            {/* Left section - spacer for traffic lights + badge (matches left sidebar width) */}
+            <div style={{ width: leftWidth }} className="shrink-0" />
 
-          {/* Resize handle spacer */}
-          <div className="w-[1px] shrink-0" />
+            {/* Resize handle spacer */}
+            <div className="w-[1px] shrink-0" />
 
-          {/* Center section - Tab bar */}
-          <div className="flex-1 min-w-0">
-            {currentThreadId && <TabBar className="h-full border-b-0" />}
+            {/* Center section - Tab bar */}
+            <div className="flex-1 min-w-0">
+              {currentThreadId && <TabBar className="h-full border-b-0" />}
+            </div>
+          </div>
+
+          {/* Main content area */}
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Sidebar - Thread List */}
+            <div style={{ width: leftWidth }} className="shrink-0">
+              <ThreadSidebar />
+            </div>
+
+            <ResizeHandle onDrag={handleLeftResize} />
+
+            {/* Center - Content Panel (Agent Chat + File Viewer) */}
+            <main className="flex flex-1 flex-col min-w-0 overflow-hidden">
+              {currentThreadId ? (
+                <TabbedPanel threadId={currentThreadId} showTabBar={false} />
+              ) : (
+                <div className="flex flex-1 items-center justify-center text-muted-foreground">
+                  Select or create a thread to begin
+                </div>
+              )}
+            </main>
           </div>
         </div>
 
-        {/* Main content area */}
-        <div className="flex flex-1 overflow-hidden">
-          {/* Left Sidebar - Thread List */}
-          <div style={{ width: leftWidth }} className="shrink-0">
-            <ThreadSidebar />
-          </div>
+        <ResizeHandle onDrag={handleRightResize} />
 
-          <ResizeHandle onDrag={handleLeftResize} />
-
-          {/* Center - Content Panel (Agent Chat + File Viewer) */}
-          <main className="flex flex-1 flex-col min-w-0 overflow-hidden">
-            {currentThreadId ? (
-              <TabbedPanel threadId={currentThreadId} showTabBar={false} />
-            ) : (
-              <div className="flex flex-1 items-center justify-center text-muted-foreground">
-                Select or create a thread to begin
-              </div>
-            )}
-          </main>
+        {/* Right Panel - Status Panels (full height) */}
+        <div style={{ width: rightWidth }} className="shrink-0">
+          <RightPanel />
         </div>
       </div>
-
-      <ResizeHandle onDrag={handleRightResize} />
-
-      {/* Right Panel - Status Panels (full height) */}
-      <div style={{ width: rightWidth }} className="shrink-0">
-        <RightPanel />
-      </div>
-    </div>
     </ThreadProvider>
   )
 }

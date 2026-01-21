@@ -1,6 +1,6 @@
-import type { UseStreamTransport } from '@langchain/langgraph-sdk/react'
+import type { UseStreamTransport } from "@langchain/langgraph-sdk/react"
 
-export type StreamPayload = Parameters<UseStreamTransport['stream']>[0]
+export type StreamPayload = Parameters<UseStreamTransport["stream"]>[0]
 
 export type StreamEvent = {
   id?: string
@@ -11,13 +11,13 @@ export type StreamEvent = {
 // Types for the IPC events from main process
 export interface IPCMessage {
   id: string
-  type: 'human' | 'ai' | 'tool' | 'system'
+  type: "human" | "ai" | "tool" | "system"
   content: string
   tool_calls?: { id: string; name: string; args: Record<string, unknown> }[]
 }
 
 export interface IPCValuesEvent {
-  type: 'values'
+  type: "values"
   data: {
     messages?: IPCMessage[]
     todos?: { id?: string; content?: string; status?: string }[]
@@ -36,30 +36,30 @@ export interface IPCValuesEvent {
 }
 
 export interface IPCTokenEvent {
-  type: 'token'
+  type: "token"
   messageId: string
   token: string
 }
 
 export interface IPCToolCallEvent {
-  type: 'tool_call'
+  type: "tool_call"
   messageId: string | null
   tool_calls: Array<{ id?: string; name?: string; args?: string }>
 }
 
 // Raw stream event - forwards LangGraph stream chunks directly
 export interface IPCStreamEvent {
-  type: 'stream'
-  mode: 'messages' | 'values'
+  type: "stream"
+  mode: "messages" | "values"
   data: unknown
 }
 
 export interface IPCDoneEvent {
-  type: 'done'
+  type: "done"
 }
 
 export interface IPCErrorEvent {
-  type: 'error'
+  type: "error"
   error: string
 }
 

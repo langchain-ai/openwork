@@ -1,7 +1,7 @@
-import type { UseStreamTransport } from '@langchain/langgraph-sdk/react'
-import type { ToolCall, ToolCallChunk } from '@langchain/core/messages'
-import type { StreamPayload, StreamEvent, IPCEvent, IPCStreamEvent } from '../../../types'
-import type { Subagent } from '../types'
+import type { UseStreamTransport } from "@langchain/langgraph-sdk/react"
+import type { ToolCall, ToolCallChunk } from "@langchain/core/messages"
+import type { StreamPayload, StreamEvent, IPCEvent, IPCStreamEvent } from "../../../types"
+import type { Subagent } from "../types"
 
 /**
  * Usage metadata from LangChain model responses.
@@ -102,7 +102,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
     const threadId = payload.config?.configurable?.thread_id
     const modelId = payload.config?.configurable?.model_id as string | undefined
     if (!threadId) {
-      return this.createErrorGenerator('MISSING_THREAD_ID', 'Thread ID is required')
+      return this.createErrorGenerator("MISSING_THREAD_ID", "Thread ID is required")
     }
 
     // Check if this is a resume command (no message needed)
@@ -114,21 +114,27 @@ export class ElectronIPCTransport implements UseStreamTransport {
       | null
       | undefined
     const messages = input?.messages ?? []
-    const lastHumanMessage = messages.find((m) => m.type === 'human')
-    const messageContent = lastHumanMessage?.content ?? ''
+    const lastHumanMessage = messages.find((m) => m.type === "human")
+    const messageContent = lastHumanMessage?.content ?? ""
 
     // Only require message content if not resuming
     if (!messageContent && !hasResumeCommand) {
-      return this.createErrorGenerator('MISSING_MESSAGE', 'Message content is required')
+      return this.createErrorGenerator("MISSING_MESSAGE", "Message content is required")
     }
 
     // Create an async generator that bridges IPC events
-    return this.createStreamGenerator(threadId, messageContent, payload.command, payload.signal, modelId)
+    return this.createStreamGenerator(
+      threadId,
+      messageContent,
+      payload.command,
+      payload.signal,
+      modelId
+    )
   }
 
   private async *createErrorGenerator(code: string, message: string): AsyncGenerator<StreamEvent> {
     yield {
-      event: 'error',
+      event: "error",
       data: { error: code, message }
     }
   }
@@ -151,7 +157,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
 
     // Emit metadata event first to establish run context
     yield {
-      event: 'metadata',
+      event: "metadata",
       data: {
         run_id: runId,
         thread_id: threadId
@@ -159,31 +165,37 @@ export class ElectronIPCTransport implements UseStreamTransport {
     }
 
     // Start the stream via IPC (pass modelId to use the selected model)
-    const cleanup = window.api.agent.streamAgent(threadId, message, command, (ipcEvent) => {
-      // Convert IPC events to SDK format
-      const sdkEvents = this.convertToSDKEvents(ipcEvent as IPCEvent, threadId)
+    const cleanup = window.api.agent.streamAgent(
+      threadId,
+      message,
+      command,
+      (ipcEvent) => {
+        // Convert IPC events to SDK format
+        const sdkEvents = this.convertToSDKEvents(ipcEvent as IPCEvent, threadId)
 
-      for (const sdkEvent of sdkEvents) {
-        if (sdkEvent.event === 'done' || sdkEvent.event === 'error') {
-          isDone = true
-          hasError = sdkEvent.event === 'error'
-        }
+        for (const sdkEvent of sdkEvents) {
+          if (sdkEvent.event === "done" || sdkEvent.event === "error") {
+            isDone = true
+            hasError = sdkEvent.event === "error"
+          }
 
-        // If someone is waiting for the next event, resolve immediately
-        if (resolveNext) {
-          const resolve = resolveNext
-          resolveNext = null
-          resolve(sdkEvent)
-        } else {
-          // Otherwise queue the event
-          eventQueue.push(sdkEvent)
+          // If someone is waiting for the next event, resolve immediately
+          if (resolveNext) {
+            const resolve = resolveNext
+            resolveNext = null
+            resolve(sdkEvent)
+          } else {
+            // Otherwise queue the event
+            eventQueue.push(sdkEvent)
+          }
         }
-      }
-    }, modelId)
+      },
+      modelId
+    )
 
     // Handle abort signal
     if (signal) {
-      signal.addEventListener('abort', () => {
+      signal.addEventListener("abort", () => {
         cleanup()
         isDone = true
         if (resolveNext) {
@@ -199,10 +211,10 @@ export class ElectronIPCTransport implements UseStreamTransport {
       // Check for queued events first
       if (eventQueue.length > 0) {
         const event = eventQueue.shift()!
-        if (event.event === 'done') {
+        if (event.event === "done") {
           break
         }
-        if (event.event !== 'error' || hasError) {
+        if (event.event !== "error" || hasError) {
           yield event
         }
         if (hasError) {
@@ -220,13 +232,13 @@ export class ElectronIPCTransport implements UseStreamTransport {
         break
       }
 
-      if (event.event === 'done') {
+      if (event.event === "done") {
         break
       }
 
       yield event
 
-      if (event.event === 'error') {
+      if (event.event === "error") {
         break
       }
     }
@@ -241,29 +253,29 @@ export class ElectronIPCTransport implements UseStreamTransport {
 
     switch (event.type) {
       // Raw stream events from LangGraph - parse and convert
-      case 'stream': {
+      case "stream": {
         const streamEvents = this.processStreamEvent(event)
         events.push(...streamEvents)
         break
       }
 
       // Legacy: Token streaming for real-time typing effect
-      case 'token':
+      case "token":
         events.push({
-          event: 'messages',
+          event: "messages",
           data: [
-            { id: event.messageId, type: 'ai', content: event.token },
-            { langgraph_node: 'agent' }
+            { id: event.messageId, type: "ai", content: event.token },
+            { langgraph_node: "agent" }
           ]
         })
         break
 
       // Legacy: Tool call chunks
-      case 'tool_call':
+      case "tool_call":
         events.push({
-          event: 'custom',
+          event: "custom",
           data: {
-            type: 'tool_call',
+            type: "tool_call",
             messageId: event.messageId,
             tool_calls: event.tool_calls
           }
@@ -271,14 +283,14 @@ export class ElectronIPCTransport implements UseStreamTransport {
         break
 
       // Legacy: Full state values
-      case 'values': {
+      case "values": {
         const { todos, files, workspacePath, subagents, interrupt } = event.data
 
         // Only emit values event if todos is defined
         // Avoid emitting { todos: [] } when undefined, which would wipe out existing todos
         if (todos !== undefined) {
           events.push({
-            event: 'values',
+            event: "values",
             data: { todos }
           })
         }
@@ -291,15 +303,15 @@ export class ElectronIPCTransport implements UseStreamTransport {
                 path,
                 is_dir: false,
                 size:
-                  typeof (data as { content?: string })?.content === 'string'
+                  typeof (data as { content?: string })?.content === "string"
                     ? (data as { content: string }).content.length
                     : undefined
               }))
 
           if (filesList.length) {
             events.push({
-              event: 'custom',
-              data: { type: 'workspace', files: filesList, path: workspacePath || '/' }
+              event: "custom",
+              data: { type: "workspace", files: filesList, path: workspacePath || "/" }
             })
           }
         }
@@ -307,8 +319,8 @@ export class ElectronIPCTransport implements UseStreamTransport {
         // Emit subagents
         if (subagents?.length) {
           events.push({
-            event: 'custom',
-            data: { type: 'subagents', subagents }
+            event: "custom",
+            data: { type: "subagents", subagents }
           })
         }
 
@@ -327,9 +339,9 @@ export class ElectronIPCTransport implements UseStreamTransport {
               )
 
               events.push({
-                event: 'custom',
+                event: "custom",
                 data: {
-                  type: 'interrupt',
+                  type: "interrupt",
                   request: {
                     id: firstAction.id || crypto.randomUUID(),
                     tool_call: {
@@ -338,9 +350,9 @@ export class ElectronIPCTransport implements UseStreamTransport {
                       args: firstAction.args || {}
                     },
                     allowed_decisions: reviewConfig?.allowedDecisions || [
-                      'approve',
-                      'reject',
-                      'edit'
+                      "approve",
+                      "reject",
+                      "edit"
                     ]
                   }
                 }
@@ -349,13 +361,13 @@ export class ElectronIPCTransport implements UseStreamTransport {
           } else if (interrupt.tool_call) {
             // Legacy format with direct tool_call property
             events.push({
-              event: 'custom',
+              event: "custom",
               data: {
-                type: 'interrupt',
+                type: "interrupt",
                 request: {
                   id: interrupt.id || crypto.randomUUID(),
                   tool_call: interrupt.tool_call,
-                  allowed_decisions: ['approve', 'reject', 'edit']
+                  allowed_decisions: ["approve", "reject", "edit"]
                 }
               }
             })
@@ -364,25 +376,25 @@ export class ElectronIPCTransport implements UseStreamTransport {
         break
       }
 
-      case 'error':
+      case "error":
         events.push({
-          event: 'error',
-          data: { error: 'STREAM_ERROR', message: event.error }
+          event: "error",
+          data: { error: "STREAM_ERROR", message: event.error }
         })
         break
 
-      case 'done':
+      case "done":
         events.push({
-          event: 'done',
+          event: "done",
           data: { thread_id: threadId }
         })
         break
     }
 
     console.log(
-      '[Transport] convertToSDKEvents total:',
+      "[Transport] convertToSDKEvents total:",
       events.length,
-      'events',
+      "events",
       events.map((e) => e.event)
     )
     return events
@@ -395,20 +407,20 @@ export class ElectronIPCTransport implements UseStreamTransport {
     const events: StreamEvent[] = []
     const { mode, data } = event
 
-    if (mode === 'messages') {
+    if (mode === "messages") {
       // Messages mode returns [message, metadata] tuples
       const [msgChunk, metadata] = data as [SerializedMessageChunk, MessageMetadata]
 
       // LangChain serialization: actual data is in kwargs
       const kwargs = msgChunk?.kwargs || {}
       const classId = Array.isArray(msgChunk?.id) ? msgChunk.id : []
-      const className = classId[classId.length - 1] || ''
+      const className = classId[classId.length - 1] || ""
 
       // Check if this is a ToolMessage (class name contains 'ToolMessage')
-      const isToolMessage = className.includes('ToolMessage') && !!kwargs.tool_call_id
+      const isToolMessage = className.includes("ToolMessage") && !!kwargs.tool_call_id
 
       // Check if this is an AI message (class name contains 'AI')
-      const isAIMessage = className.includes('AI') || className.includes('AIMessageChunk')
+      const isAIMessage = className.includes("AI") || className.includes("AIMessageChunk")
 
       if (isAIMessage) {
         const content = this.extractContent(kwargs.content)
@@ -417,16 +429,16 @@ export class ElectronIPCTransport implements UseStreamTransport {
 
         if (content || kwargs.tool_calls?.length) {
           events.push({
-            event: 'messages',
+            event: "messages",
             data: [
               {
                 id: msgId,
-                type: 'ai',
-                content: content || '',
+                type: "ai",
+                content: content || "",
                 // Include tool_calls if present
                 ...(kwargs.tool_calls?.length && { tool_calls: kwargs.tool_calls })
               },
-              { langgraph_node: metadata?.langgraph_node || 'agent' }
+              { langgraph_node: metadata?.langgraph_node || "agent" }
             ]
           })
         }
@@ -437,9 +449,9 @@ export class ElectronIPCTransport implements UseStreamTransport {
           events.push(...subagentEvents)
 
           events.push({
-            event: 'custom',
+            event: "custom",
             data: {
-              type: 'tool_call',
+              type: "tool_call",
               messageId: this.currentMessageId,
               tool_calls: kwargs.tool_call_chunks
             }
@@ -465,7 +477,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
         // Usage metadata is present on completed AI messages (not streaming chunks)
         const usageMetadata = kwargs.usage_metadata || kwargs.response_metadata?.usage
         if (usageMetadata) {
-          console.log('[ElectronTransport] Found usage_metadata:', {
+          console.log("[ElectronTransport] Found usage_metadata:", {
             input_tokens: usageMetadata.input_tokens,
             output_tokens: usageMetadata.output_tokens,
             total_tokens: usageMetadata.total_tokens,
@@ -475,9 +487,9 @@ export class ElectronIPCTransport implements UseStreamTransport {
           // Only emit if we have actual token counts (not on every chunk)
           if (usageMetadata.input_tokens !== undefined && usageMetadata.input_tokens > 0) {
             events.push({
-              event: 'custom',
+              event: "custom",
               data: {
-                type: 'token_usage',
+                type: "token_usage",
                 usage: {
                   inputTokens: usageMetadata.input_tokens,
                   outputTokens: usageMetadata.output_tokens,
@@ -498,26 +510,26 @@ export class ElectronIPCTransport implements UseStreamTransport {
 
         // Emit tool message to the stream
         events.push({
-          event: 'messages',
+          event: "messages",
           data: [
             {
               id: msgId,
-              type: 'tool',
+              type: "tool",
               content,
               tool_call_id: kwargs.tool_call_id,
               name: kwargs.name
             },
-            { langgraph_node: metadata?.langgraph_node || 'tools' }
+            { langgraph_node: metadata?.langgraph_node || "tools" }
           ]
         })
 
         // Handle subagent task completion
-        if (kwargs.name === 'task') {
+        if (kwargs.name === "task") {
           const completionEvents = this.processToolMessage(kwargs.tool_call_id)
           events.push(...completionEvents)
         }
       }
-    } else if (mode === 'values') {
+    } else if (mode === "values") {
       // Values mode returns full state with serialized LangChain messages
       const state = data as {
         messages?: SerializedMessageChunk[]
@@ -538,13 +550,13 @@ export class ElectronIPCTransport implements UseStreamTransport {
         for (const msg of state.messages) {
           const kwargs = msg.kwargs || {}
           const classId = Array.isArray(msg.id) ? msg.id : []
-          const className = classId[classId.length - 1] || ''
+          const className = classId[classId.length - 1] || ""
 
           // Check for task tool calls in AI messages
           if (kwargs.tool_calls?.length) {
             for (const toolCall of kwargs.tool_calls) {
               if (
-                toolCall.name === 'task' &&
+                toolCall.name === "task" &&
                 toolCall.id &&
                 !this.activeSubagents.has(toolCall.id)
               ) {
@@ -558,10 +570,10 @@ export class ElectronIPCTransport implements UseStreamTransport {
           }
 
           // Check for ToolMessage (subagent completion)
-          if (className.includes('ToolMessage') && kwargs.tool_call_id && kwargs.name === 'task') {
+          if (className.includes("ToolMessage") && kwargs.tool_call_id && kwargs.name === "task") {
             const subagent = this.activeSubagents.get(kwargs.tool_call_id)
-            if (subagent && subagent.status === 'running') {
-              subagent.status = 'completed'
+            if (subagent && subagent.status === "running") {
+              subagent.status = "completed"
               subagent.completedAt = new Date()
             }
           }
@@ -578,17 +590,17 @@ export class ElectronIPCTransport implements UseStreamTransport {
       const transformedMessages = state.messages
         ?.filter((msg) => {
           const classId = Array.isArray(msg.id) ? msg.id : []
-          const className = classId[classId.length - 1] || ''
+          const className = classId[classId.length - 1] || ""
           // Filter out HumanMessage
-          return !className.includes('Human')
+          return !className.includes("Human")
         })
         .map((msg) => {
           const kwargs = msg.kwargs || {}
           const classId = Array.isArray(msg.id) ? msg.id : []
-          const className = classId[classId.length - 1] || ''
+          const className = classId[classId.length - 1] || ""
 
           // Determine message type from class name
-          const type: 'ai' | 'tool' = className.includes('Tool') ? 'tool' : 'ai'
+          const type: "ai" | "tool" = className.includes("Tool") ? "tool" : "ai"
           const content = this.extractContent(kwargs.content)
 
           return {
@@ -596,10 +608,10 @@ export class ElectronIPCTransport implements UseStreamTransport {
             type,
             content,
             // Include tool_calls for AI messages
-            ...(type === 'ai' && kwargs.tool_calls && { tool_calls: kwargs.tool_calls }),
+            ...(type === "ai" && kwargs.tool_calls && { tool_calls: kwargs.tool_calls }),
             // Include tool_call_id and name for tool messages
-            ...(type === 'tool' && kwargs.tool_call_id && { tool_call_id: kwargs.tool_call_id }),
-            ...(type === 'tool' && kwargs.name && { name: kwargs.name })
+            ...(type === "tool" && kwargs.tool_call_id && { tool_call_id: kwargs.tool_call_id }),
+            ...(type === "tool" && kwargs.name && { name: kwargs.name })
           }
         })
 
@@ -619,7 +631,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
       // Only emit if we have something to update
       if (Object.keys(valuesData).length > 0) {
         events.push({
-          event: 'values',
+          event: "values",
           data: valuesData
         })
       }
@@ -632,15 +644,15 @@ export class ElectronIPCTransport implements UseStreamTransport {
               path,
               is_dir: false,
               size:
-                typeof (fileData as { content?: string })?.content === 'string'
+                typeof (fileData as { content?: string })?.content === "string"
                   ? (fileData as { content: string }).content.length
                   : undefined
             }))
 
         if (filesList.length) {
           events.push({
-            event: 'custom',
-            data: { type: 'workspace', files: filesList, path: state.workspacePath || '/' }
+            event: "custom",
+            data: { type: "workspace", files: filesList, path: state.workspacePath || "/" }
           })
         }
       }
@@ -670,9 +682,9 @@ export class ElectronIPCTransport implements UseStreamTransport {
           }
 
           events.push({
-            event: 'custom',
+            event: "custom",
             data: {
-              type: 'interrupt',
+              type: "interrupt",
               request: {
                 id: toolCallId || crypto.randomUUID(),
                 tool_call: {
@@ -680,7 +692,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
                   name: firstAction.name,
                   args: firstAction.args || {}
                 },
-                allowed_decisions: reviewConfig?.allowedDecisions || ['approve', 'reject', 'edit']
+                allowed_decisions: reviewConfig?.allowedDecisions || ["approve", "reject", "edit"]
               }
             }
           })
@@ -697,16 +709,16 @@ export class ElectronIPCTransport implements UseStreamTransport {
   private extractContent(
     content: string | Array<{ type: string; text?: string }> | undefined
   ): string {
-    if (typeof content === 'string') {
+    if (typeof content === "string") {
       return content
     }
     if (Array.isArray(content)) {
       return content
-        .filter((block): block is { type: 'text'; text: string } => block.type === 'text')
+        .filter((block): block is { type: "text"; text: string } => block.type === "text")
         .map((block) => block.text)
-        .join('')
+        .join("")
     }
-    return ''
+    return ""
   }
 
   /**
@@ -724,7 +736,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
       // Get or create accumulated tool call
       let accumulated = this.accumulatedToolCalls.get(chunk.id)
       if (!accumulated) {
-        accumulated = { id: chunk.id, name: chunk.name || '', args: '' }
+        accumulated = { id: chunk.id, name: chunk.name || "", args: "" }
         this.accumulatedToolCalls.set(chunk.id, accumulated)
       }
 
@@ -739,7 +751,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
       }
 
       // Check if this is a "task" tool call and try to parse args
-      if (accumulated.name === 'task') {
+      if (accumulated.name === "task") {
         try {
           const args = JSON.parse(accumulated.args)
           // Only process if we haven't already created a subagent for this tool call
@@ -769,7 +781,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
       if (!toolCall.id || !toolCall.name) continue
 
       // Check if this is a "task" tool call
-      if (toolCall.name === 'task' && !this.activeSubagents.has(toolCall.id)) {
+      if (toolCall.name === "task" && !this.activeSubagents.has(toolCall.id)) {
         const args = toolCall.args || {}
         if (args.subagent_type || args.description) {
           const subagent = this.createSubagentFromTask(toolCall.id, args)
@@ -791,7 +803,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
     // Check if this tool_call_id corresponds to an active subagent
     const subagent = this.activeSubagents.get(toolCallId)
     if (subagent) {
-      subagent.status = 'completed'
+      subagent.status = "completed"
       subagent.completedAt = new Date()
       events.push(this.createSubagentEvent())
     }
@@ -803,16 +815,16 @@ export class ElectronIPCTransport implements UseStreamTransport {
    * Create a Subagent object from task tool call args
    */
   private createSubagentFromTask(toolCallId: string, args: Record<string, unknown>): Subagent {
-    const subagentType = (args.subagent_type as string) || 'general-purpose'
-    const description = (args.description as string) || 'Executing task...'
+    const subagentType = (args.subagent_type as string) || "general-purpose"
+    const description = (args.description as string) || "Executing task..."
 
     // Generate a friendly name from the subagent type
     const nameMap: Record<string, string> = {
-      'general-purpose': 'General Purpose Agent',
-      'correctness-checker': 'Correctness Checker',
-      'final-reviewer': 'Final Reviewer',
-      'code-reviewer': 'Code Reviewer',
-      research: 'Research Agent'
+      "general-purpose": "General Purpose Agent",
+      "correctness-checker": "Correctness Checker",
+      "final-reviewer": "Final Reviewer",
+      "code-reviewer": "Code Reviewer",
+      research: "Research Agent"
     }
 
     return {
@@ -820,7 +832,7 @@ export class ElectronIPCTransport implements UseStreamTransport {
       toolCallId,
       name: nameMap[subagentType] || this.formatSubagentName(subagentType),
       description,
-      status: 'running',
+      status: "running",
       startedAt: new Date(),
       subagentType
     }
@@ -831,9 +843,9 @@ export class ElectronIPCTransport implements UseStreamTransport {
    */
   private formatSubagentName(subagentType: string): string {
     return subagentType
-      .split('-')
+      .split("-")
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
+      .join(" ")
   }
 
   /**
@@ -841,9 +853,9 @@ export class ElectronIPCTransport implements UseStreamTransport {
    */
   private createSubagentEvent(): StreamEvent {
     return {
-      event: 'custom',
+      event: "custom",
       data: {
-        type: 'subagents',
+        type: "subagents",
         subagents: Array.from(this.activeSubagents.values())
       }
     }

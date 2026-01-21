@@ -1,8 +1,8 @@
-export { TabBar } from './TabBar'
-export { FileViewer } from './FileViewer'
-export { TabbedPanel } from './TabbedPanel'
-export { CodeViewer } from './CodeViewer'
-export { ImageViewer } from './ImageViewer'
-export { MediaViewer } from './MediaViewer'
-export { PDFViewer } from './PDFViewer'
-export { BinaryFileViewer } from './BinaryFileViewer'
+export { TabBar } from "./TabBar"
+export { FileViewer } from "./FileViewer"
+export { TabbedPanel } from "./TabbedPanel"
+export { CodeViewer } from "./CodeViewer"
+export { ImageViewer } from "./ImageViewer"
+export { MediaViewer } from "./MediaViewer"
+export { PDFViewer } from "./PDFViewer"
+export { BinaryFileViewer } from "./BinaryFileViewer"

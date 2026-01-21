@@ -1,32 +1,32 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
-import { createDeepAgent } from 'deepagents'
-import { getDefaultModel } from '../ipc/models'
-import { getApiKey, getOpenworkDir, getThreadCheckpointPath } from '../storage'
-import Store from 'electron-store'
-import { ChatAnthropic } from '@langchain/anthropic'
-import { ChatOpenAI } from '@langchain/openai'
-import { DeepSeekChatOpenAI } from './deepseek-model'
-import { ChatGoogleGenerativeAI } from '@langchain/google-genai'
-import { SqlJsSaver } from '../checkpointer/sqljs-saver'
-import { LocalSandbox } from './local-sandbox'
+import { createDeepAgent } from "deepagents"
+import Store from "electron-store"
+import { ChatAnthropic } from "@langchain/anthropic"
+import { ChatOpenAI } from "@langchain/openai"
+import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
+import { getDefaultModel } from "../ipc/models"
+import { getApiKey, getOpenworkDir, getThreadCheckpointPath } from "../storage"
+import { DeepSeekChatOpenAI } from "./deepseek-model"
+import { SqlJsSaver } from "../checkpointer/sqljs-saver"
+import { LocalSandbox } from "./local-sandbox"
 
-import type * as _lcTypes from 'langchain'
-import type * as _lcMessages from '@langchain/core/messages'
-import type * as _lcLanggraph from '@langchain/langgraph'
-import type * as _lcZodTypes from '@langchain/core/utils/types'
+import type * as _lcTypes from "langchain"
+import type * as _lcMessages from "@langchain/core/messages"
+import type * as _lcLanggraph from "@langchain/langgraph"
+import type * as _lcZodTypes from "@langchain/core/utils/types"
 
-import { BASE_SYSTEM_PROMPT } from './system-prompt'
+import { BASE_SYSTEM_PROMPT } from "./system-prompt"
 
 function ensureGraphInterruptHasInterrupts(): void {
   const errorProto = Error.prototype as { interrupts?: unknown }
-  if (Object.prototype.hasOwnProperty.call(errorProto, 'interrupts')) {
+  if (Object.prototype.hasOwnProperty.call(errorProto, "interrupts")) {
     return
   }
 
-  Object.defineProperty(errorProto, 'interrupts', {
+  Object.defineProperty(errorProto, "interrupts", {
     configurable: true,
     get() {
-      if (this && (this.name === 'GraphInterrupt' || this.name === 'NodeInterrupt')) {
+      if (this && (this.name === "GraphInterrupt" || this.name === "NodeInterrupt")) {
         return []
       }
       return undefined
@@ -37,12 +37,12 @@ function ensureGraphInterruptHasInterrupts(): void {
 ensureGraphInterruptHasInterrupts()
 
 const settingsStore = new Store({
-  name: 'settings',
+  name: "settings",
   cwd: getOpenworkDir()
 })
 
 function getAutoApproveExecute(): boolean {
-  return Boolean(settingsStore.get('autoApproveExecute', false))
+  return Boolean(settingsStore.get("autoApproveExecute", false))
 }
 
 /**
@@ -93,51 +93,51 @@ function getModelInstance(
   modelId?: string
 ): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | DeepSeekChatOpenAI | string {
   const model = modelId || getDefaultModel()
-  console.log('[Runtime] Using model:', model)
+  console.log("[Runtime] Using model:", model)
 
   // Determine provider from model ID
-  if (model.startsWith('claude')) {
-    const apiKey = getApiKey('anthropic')
-    console.log('[Runtime] Anthropic API key present:', !!apiKey)
+  if (model.startsWith("claude")) {
+    const apiKey = getApiKey("anthropic")
+    console.log("[Runtime] Anthropic API key present:", !!apiKey)
     if (!apiKey) {
-      throw new Error('Anthropic API key not configured')
+      throw new Error("Anthropic API key not configured")
     }
     return new ChatAnthropic({
       model,
       anthropicApiKey: apiKey
     })
   } else if (
-    model.startsWith('gpt') ||
-    model.startsWith('o1') ||
-    model.startsWith('o3') ||
-    model.startsWith('o4')
+    model.startsWith("gpt") ||
+    model.startsWith("o1") ||
+    model.startsWith("o3") ||
+    model.startsWith("o4")
   ) {
-    const apiKey = getApiKey('openai')
-    console.log('[Runtime] OpenAI API key present:', !!apiKey)
+    const apiKey = getApiKey("openai")
+    console.log("[Runtime] OpenAI API key present:", !!apiKey)
     if (!apiKey) {
-      throw new Error('OpenAI API key not configured')
+      throw new Error("OpenAI API key not configured")
     }
     return new ChatOpenAI({
       model,
       apiKey
     })
-  } else if (model.startsWith('deepseek')) {
-    const apiKey = getApiKey('deepseek')
-    console.log('[Runtime] DeepSeek API key present:', !!apiKey)
+  } else if (model.startsWith("deepseek")) {
+    const apiKey = getApiKey("deepseek")
+    console.log("[Runtime] DeepSeek API key present:", !!apiKey)
     if (!apiKey) {
-      throw new Error('DeepSeek API key not configured')
+      throw new Error("DeepSeek API key not configured")
     }
     return new DeepSeekChatOpenAI({
       model,
       apiKey,
-      configuration: { baseURL: 'https://api.deepseek.com' },
+      configuration: { baseURL: "https://api.deepseek.com" },
       streaming: false
     })
-  } else if (model.startsWith('gemini')) {
-    const apiKey = getApiKey('google')
-    console.log('[Runtime] Google API key present:', !!apiKey)
+  } else if (model.startsWith("gemini")) {
+    const apiKey = getApiKey("google")
+    console.log("[Runtime] Google API key present:", !!apiKey)
     if (!apiKey) {
-      throw new Error('Google API key not configured')
+      throw new Error("Google API key not configured")
     }
     return new ChatGoogleGenerativeAI({
       model,
@@ -161,29 +161,28 @@ export interface CreateAgentRuntimeOptions {
 // Create agent runtime with configured model and checkpointer
 export type AgentRuntime = ReturnType<typeof createDeepAgent>
 
-// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 export async function createAgentRuntime(options: CreateAgentRuntimeOptions) {
   const { threadId, modelId, workspacePath } = options
 
   if (!threadId) {
-    throw new Error('Thread ID is required for checkpointing.')
+    throw new Error("Thread ID is required for checkpointing.")
   }
 
   if (!workspacePath) {
     throw new Error(
-      'Workspace path is required. Please select a workspace folder before running the agent.'
+      "Workspace path is required. Please select a workspace folder before running the agent."
     )
   }
 
-  console.log('[Runtime] Creating agent runtime...')
-  console.log('[Runtime] Thread ID:', threadId)
-  console.log('[Runtime] Workspace path:', workspacePath)
+  console.log("[Runtime] Creating agent runtime...")
+  console.log("[Runtime] Thread ID:", threadId)
+  console.log("[Runtime] Workspace path:", workspacePath)
 
   const model = getModelInstance(modelId)
-  console.log('[Runtime] Model instance created:', typeof model)
+  console.log("[Runtime] Model instance created:", typeof model)
 
   const checkpointer = await getCheckpointer(threadId)
-  console.log('[Runtime] Checkpointer ready for thread:', threadId)
+  console.log("[Runtime] Checkpointer ready for thread:", threadId)
 
   const backend = new LocalSandbox({
     rootDir: workspacePath,
@@ -220,7 +219,7 @@ The workspace root is: ${workspacePath}`
     ...(interruptOn ? { interruptOn } : {})
   } as Parameters<typeof createDeepAgent>[0])
 
-  console.log('[Runtime] Deep agent created with LocalSandbox at:', workspacePath)
+  console.log("[Runtime] Deep agent created with LocalSandbox at:", workspacePath)
   return agent
 }
 

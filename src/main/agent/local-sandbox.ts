@@ -9,9 +9,9 @@
  * handled via HITL configuration.
  */
 
-import { spawn } from 'node:child_process'
-import { randomUUID } from 'node:crypto'
-import { FilesystemBackend, type ExecuteResponse, type SandboxBackendProtocol } from 'deepagents'
+import { spawn } from "node:child_process"
+import { randomUUID } from "node:crypto"
+import { FilesystemBackend, type ExecuteResponse, type SandboxBackendProtocol } from "deepagents"
 
 /**
  * Options for LocalSandbox configuration.
@@ -88,9 +88,9 @@ export class LocalSandbox extends FilesystemBackend implements SandboxBackendPro
    * ```
    */
   async execute(command: string): Promise<ExecuteResponse> {
-    if (!command || typeof command !== 'string') {
+    if (!command || typeof command !== "string") {
       return {
-        output: 'Error: Shell tool expects a non-empty command string.',
+        output: "Error: Shell tool expects a non-empty command string.",
         exitCode: 1,
         truncated: false
       }
@@ -103,23 +103,23 @@ export class LocalSandbox extends FilesystemBackend implements SandboxBackendPro
       let resolved = false
 
       // Determine shell based on platform
-      const isWindows = process.platform === 'win32'
-      const shell = isWindows ? 'cmd.exe' : '/bin/sh'
-      const shellArgs = isWindows ? ['/c', command] : ['-c', command]
+      const isWindows = process.platform === "win32"
+      const shell = isWindows ? "cmd.exe" : "/bin/sh"
+      const shellArgs = isWindows ? ["/c", command] : ["-c", command]
 
       const proc = spawn(shell, shellArgs, {
         cwd: this.workingDir,
         env: this.env,
-        stdio: ['ignore', 'pipe', 'pipe']
+        stdio: ["ignore", "pipe", "pipe"]
       })
 
       // Handle timeout
       const timeoutId = setTimeout(() => {
         if (!resolved) {
           resolved = true
-          proc.kill('SIGTERM')
+          proc.kill("SIGTERM")
           // Give it a moment, then force kill
-          setTimeout(() => proc.kill('SIGKILL'), 1000)
+          setTimeout(() => proc.kill("SIGKILL"), 1000)
           resolve({
             output: `Error: Command timed out after ${(this.timeout / 1000).toFixed(1)} seconds.`,
             exitCode: null,
@@ -129,7 +129,7 @@ export class LocalSandbox extends FilesystemBackend implements SandboxBackendPro
       }, this.timeout)
 
       // Collect stdout
-      proc.stdout.on('data', (data: Buffer) => {
+      proc.stdout.on("data", (data: Buffer) => {
         if (truncated) return
 
         const chunk = data.toString()
@@ -150,20 +150,20 @@ export class LocalSandbox extends FilesystemBackend implements SandboxBackendPro
       })
 
       // Collect stderr with [stderr] prefix per line
-      proc.stderr.on('data', (data: Buffer) => {
+      proc.stderr.on("data", (data: Buffer) => {
         if (truncated) return
 
         const chunk = data.toString()
         // Prefix each line with [stderr]
         const prefixedLines = chunk
-          .split('\n')
+          .split("\n")
           .filter((line) => line.length > 0)
           .map((line) => `[stderr] ${line}`)
-          .join('\n')
+          .join("\n")
 
         if (prefixedLines.length === 0) return
 
-        const withNewline = prefixedLines + (chunk.endsWith('\n') ? '\n' : '')
+        const withNewline = prefixedLines + (chunk.endsWith("\n") ? "\n" : "")
         const newTotal = totalBytes + withNewline.length
 
         if (newTotal > this.maxOutputBytes) {
@@ -180,12 +180,12 @@ export class LocalSandbox extends FilesystemBackend implements SandboxBackendPro
       })
 
       // Handle process exit
-      proc.on('close', (code, signal) => {
+      proc.on("close", (code, signal) => {
         if (resolved) return
         resolved = true
         clearTimeout(timeoutId)
 
-        let output = outputParts.join('')
+        let output = outputParts.join("")
 
         // Add truncation notice if needed
         if (truncated) {
@@ -194,7 +194,7 @@ export class LocalSandbox extends FilesystemBackend implements SandboxBackendPro
 
         // If no output, show placeholder
         if (!output.trim()) {
-          output = '<no output>'
+          output = "<no output>"
         }
 
         resolve({
@@ -205,7 +205,7 @@ export class LocalSandbox extends FilesystemBackend implements SandboxBackendPro
       })
 
       // Handle spawn errors
-      proc.on('error', (err) => {
+      proc.on("error", (err) => {
         if (resolved) return
         resolved = true
         clearTimeout(timeoutId)

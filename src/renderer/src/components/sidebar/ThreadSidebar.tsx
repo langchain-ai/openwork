@@ -1,19 +1,19 @@
-import { useState } from 'react'
-import { Plus, MessageSquare, Trash2, Pencil, Loader2, Settings } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { useAppStore } from '@/lib/store'
-import { useThreadStream } from '@/lib/thread-context'
-import { cn, formatRelativeTime, truncate } from '@/lib/utils'
-import { SettingsDialog } from '@/components/settings/SettingsDialog'
+import { useState } from "react"
+import { Plus, MessageSquare, Trash2, Pencil, Loader2, Settings } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { useAppStore } from "@/lib/store"
+import { useThreadStream } from "@/lib/thread-context"
+import { cn, formatRelativeTime, truncate } from "@/lib/utils"
+import { SettingsDialog } from "@/components/settings/SettingsDialog"
 import {
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
   ContextMenuSeparator,
   ContextMenuTrigger
-} from '@/components/ui/context-menu'
-import type { Thread } from '@/types'
+} from "@/components/ui/context-menu"
+import type { Thread } from "@/types"
 
 // Thread loading indicator that subscribes to the stream context
 function ThreadLoadingIcon({ threadId }: { threadId: string }): React.JSX.Element {
@@ -54,10 +54,10 @@ function ThreadListItem({
       <ContextMenuTrigger asChild>
         <div
           className={cn(
-            'group flex items-center gap-2 rounded-sm px-3 py-2 cursor-pointer transition-colors overflow-hidden',
+            "group flex items-center gap-2 rounded-sm px-3 py-2 cursor-pointer transition-colors overflow-hidden",
             isSelected
-              ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-              : 'hover:bg-sidebar-accent/50'
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
+              : "hover:bg-sidebar-accent/50"
           )}
           onClick={() => {
             if (!isEditing) {
@@ -74,8 +74,8 @@ function ThreadListItem({
                 onChange={(e) => onEditingTitleChange(e.target.value)}
                 onBlur={onSaveTitle}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') onSaveTitle()
-                  if (e.key === 'Escape') onCancelEditing()
+                  if (e.key === "Enter") onSaveTitle()
+                  if (e.key === "Escape") onCancelEditing()
                 }}
                 className="w-full bg-background border border-border rounded px-1 py-0.5 text-sm outline-none focus:ring-1 focus:ring-ring"
                 autoFocus
@@ -111,10 +111,7 @@ function ThreadListItem({
           Rename
         </ContextMenuItem>
         <ContextMenuSeparator />
-        <ContextMenuItem
-          variant="destructive"
-          onClick={onDelete}
-        >
+        <ContextMenuItem variant="destructive" onClick={onDelete}>
           <Trash2 className="size-4 mr-2" />
           Delete
         </ContextMenuItem>
@@ -124,22 +121,16 @@ function ThreadListItem({
 }
 
 export function ThreadSidebar(): React.JSX.Element {
-  const {
-    threads,
-    currentThreadId,
-    createThread,
-    selectThread,
-    deleteThread,
-    updateThread
-  } = useAppStore()
+  const { threads, currentThreadId, createThread, selectThread, deleteThread, updateThread } =
+    useAppStore()
 
   const [editingThreadId, setEditingThreadId] = useState<string | null>(null)
-  const [editingTitle, setEditingTitle] = useState('')
+  const [editingTitle, setEditingTitle] = useState("")
   const [settingsOpen, setSettingsOpen] = useState(false)
 
   const startEditing = (threadId: string, currentTitle: string): void => {
     setEditingThreadId(threadId)
-    setEditingTitle(currentTitle || '')
+    setEditingTitle(currentTitle || "")
   }
 
   const saveTitle = async (): Promise<void> => {
@@ -147,12 +138,12 @@ export function ThreadSidebar(): React.JSX.Element {
       await updateThread(editingThreadId, { title: editingTitle.trim() })
     }
     setEditingThreadId(null)
-    setEditingTitle('')
+    setEditingTitle("")
   }
 
   const cancelEditing = (): void => {
     setEditingThreadId(null)
-    setEditingTitle('')
+    setEditingTitle("")
   }
 
   const handleNewThread = async (): Promise<void> => {
@@ -162,7 +153,7 @@ export function ThreadSidebar(): React.JSX.Element {
   return (
     <aside className="flex h-full w-full flex-col border-r border-border bg-sidebar overflow-hidden">
       {/* New Thread Button - with dynamic safe area padding when zoomed out */}
-      <div className="p-2" style={{ paddingTop: 'calc(8px + var(--sidebar-safe-padding, 0px))' }}>
+      <div className="p-2" style={{ paddingTop: "calc(8px + var(--sidebar-safe-padding, 0px))" }}>
         <div className="flex items-center gap-2">
           <Button
             variant="ghost"
@@ -196,7 +187,7 @@ export function ThreadSidebar(): React.JSX.Element {
               editingTitle={editingTitle}
               onSelect={() => selectThread(thread.thread_id)}
               onDelete={() => deleteThread(thread.thread_id)}
-              onStartEditing={() => startEditing(thread.thread_id, thread.title || '')}
+              onStartEditing={() => startEditing(thread.thread_id, thread.title || "")}
               onSaveTitle={saveTitle}
               onCancelEditing={cancelEditing}
               onEditingTitleChange={setEditingTitle}
