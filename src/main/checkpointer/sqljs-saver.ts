@@ -58,7 +58,7 @@ export class SqlJsSaver extends BaseCheckpointSaver {
     if (existsSync(this.dbPath)) {
       // Check file size - sql.js works entirely in memory, so large files will fail
       const stats = statSync(this.dbPath)
-      const MAX_DB_SIZE = 100 * 1024 * 1024 // 100MB limit
+      const MAX_DB_SIZE = 512 * 1024 * 1024 // 512MB limit
 
       if (stats.size > MAX_DB_SIZE) {
         console.warn(

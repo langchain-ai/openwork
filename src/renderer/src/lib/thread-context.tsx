@@ -544,19 +544,34 @@ export function ThreadProvider({ children }: { children: ReactNode }) {
                 else if (msg.type === 'ai') role = 'assistant'
                 else if (msg.type === 'system') role = 'system'
                 else if (msg.type === 'tool') role = 'tool'
+              } else if (Array.isArray(msg.id)) {
+                const idType = msg.id[msg.id.length - 1]
+                if (idType === 'HumanMessage') role = 'user'
+                else if (idType === 'AIMessage') role = 'assistant'
+                else if (idType === 'SystemMessage') role = 'system'
+                else if (idType === 'ToolMessage') role = 'tool'
               }
 
               let content: Message['content'] = ''
-              if (typeof msg.content === 'string') content = msg.content
-              else if (Array.isArray(msg.content)) content = msg.content as Message['content']
+              const rawContent =
+                msg.content ??
+                msg.kwargs?.content ??
+                msg.kwargs?.additional_kwargs?.content ??
+                ''
+              if (typeof rawContent === 'string') content = rawContent
+              else if (Array.isArray(rawContent)) content = rawContent as Message['content']
+
+              const toolCalls = (msg.tool_calls ?? msg.kwargs?.tool_calls) as Message['tool_calls'] | undefined
+              const toolCallId = msg.tool_call_id ?? msg.kwargs?.tool_call_id
+              const toolName = msg.name ?? msg.kwargs?.name
 
               return {
-                id: msg.id || `msg-${index}`,
+                id: msg.id || msg.kwargs?.id || `msg-${index}`,
                 role,
                 content,
-                tool_calls: msg.tool_calls as Message['tool_calls'],
-                ...(role === 'tool' && msg.tool_call_id && { tool_call_id: msg.tool_call_id }),
-                ...(role === 'tool' && msg.name && { name: msg.name }),
+                tool_calls: toolCalls,
+                ...(role === 'tool' && toolCallId && { tool_call_id: toolCallId }),
+                ...(role === 'tool' && toolName && { name: toolName }),
                 created_at: new Date()
               }
             })
