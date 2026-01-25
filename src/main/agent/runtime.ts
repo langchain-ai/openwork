@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createDeepAgent } from "deepagents"
-import { getDefaultModel } from "../ipc/models"
+import { getDefaultModel, getModelConfig } from "../ipc/models"
 import { getApiKey, getThreadCheckpointPath } from "../storage"
 import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatOpenAI } from "@langchain/openai"
@@ -62,11 +62,14 @@ export async function closeCheckpointer(threadId: string): Promise<void> {
 function getModelInstance(
   modelId?: string
 ): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
-  const model = modelId || getDefaultModel()
-  console.log("[Runtime] Using model:", model)
+  const selectedModelId = modelId || getDefaultModel()
+  const modelConfig = getModelConfig(selectedModelId)
+  const provider = modelConfig?.provider
+  const model = modelConfig?.model ?? selectedModelId
+  console.log("[Runtime] Using model:", selectedModelId)
 
   // Determine provider from model ID
-  if (model.startsWith("claude")) {
+  if (provider === "anthropic" || model.startsWith("claude")) {
     const apiKey = getApiKey("anthropic")
     console.log("[Runtime] Anthropic API key present:", !!apiKey)
     if (!apiKey) {
@@ -77,6 +80,7 @@ function getModelInstance(
       anthropicApiKey: apiKey
     })
   } else if (
+    provider === "openai" ||
     model.startsWith("gpt") ||
     model.startsWith("o1") ||
     model.startsWith("o3") ||
@@ -91,7 +95,7 @@ function getModelInstance(
       model,
       openAIApiKey: apiKey
     })
-  } else if (model.startsWith("gemini")) {
+  } else if (provider === "google" || model.startsWith("gemini")) {
     const apiKey = getApiKey("google")
     console.log("[Runtime] Google API key present:", !!apiKey)
     if (!apiKey) {
@@ -100,6 +104,20 @@ function getModelInstance(
     return new ChatGoogleGenerativeAI({
       model,
       apiKey: apiKey
+    })
+  } else if (provider === "volcengine" || model.startsWith("ep-")) {
+    const apiKey = getApiKey("volcengine")
+    console.log("[Runtime] Volcengine API key present:", !!apiKey)
+    if (!apiKey) {
+      throw new Error("Volcengine API key not configured")
+    }
+    return new ChatOpenAI({
+      model,
+      apiKey,
+      useResponsesApi: true,
+      configuration: {
+        baseURL: "https://ark.cn-beijing.volces.com/api/v3"
+      }
     })
   }
 

@@ -36,6 +36,14 @@ interface AppState {
   loadProviders: () => Promise<void>
   setApiKey: (providerId: string, apiKey: string) => Promise<void>
   deleteApiKey: (providerId: string) => Promise<void>
+  addCustomModel: (params: {
+    id: string
+    provider: string
+    model?: string
+    name?: string
+    description?: string
+  }) => Promise<void>
+  deleteCustomModel: (modelId: string) => Promise<void>
 
   // Panel actions
   setRightPanelTab: (tab: "todos" | "files" | "subagents") => void
@@ -160,6 +168,14 @@ export const useAppStore = create<AppState>((set, get) => ({
     await window.api.models.deleteApiKey(providerId)
     // Reload providers and models to update availability
     await get().loadProviders()
+    await get().loadModels()
+  },
+  addCustomModel: async (params) => {
+    await window.api.models.addCustomModel(params)
+    await get().loadModels()
+  },
+  deleteCustomModel: async (modelId: string) => {
+    await window.api.models.deleteCustomModel(modelId)
     await get().loadModels()
   },
 

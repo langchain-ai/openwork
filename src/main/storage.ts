@@ -11,7 +11,8 @@ const ENV_VAR_NAMES: Record<ProviderId, string> = {
   anthropic: "ANTHROPIC_API_KEY",
   openai: "OPENAI_API_KEY",
   google: "GOOGLE_API_KEY",
-  ollama: "" // Ollama doesn't require an API key
+  ollama: "", // Ollama doesn't require an API key
+  volcengine: "ARK_API_KEY"
 }
 
 export function getOpenworkDir(): string {

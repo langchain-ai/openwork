@@ -24,7 +24,7 @@ export interface Run {
 }
 
 // Provider configuration
-export type ProviderId = "anthropic" | "openai" | "google" | "ollama"
+export type ProviderId = "anthropic" | "openai" | "google" | "ollama" | "volcengine"
 
 export interface Provider {
   id: ProviderId
@@ -39,6 +39,7 @@ export interface ModelConfig {
   model: string
   description?: string
   available: boolean
+  custom?: boolean
 }
 
 // Subagent types (from deepagentsjs)

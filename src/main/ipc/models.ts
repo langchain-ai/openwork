@@ -3,6 +3,7 @@ import Store from "electron-store"
 import * as fs from "fs/promises"
 import * as path from "path"
 import type {
+  AddCustomModelParams,
   ModelConfig,
   Provider,
   SetApiKeyParams,
@@ -19,11 +20,17 @@ const store = new Store({
   cwd: getOpenworkDir()
 })
 
+type StoredCustomModel = Omit<ModelConfig, "available" | "custom">
+
+const CUSTOM_MODELS_KEY = "customModels"
+const DEFAULT_MODEL_ID = "claude-sonnet-4-5-20250929"
+
 // Provider configurations
 const PROVIDERS: Omit<Provider, "hasApiKey">[] = [
   { id: "anthropic", name: "Anthropic" },
   { id: "openai", name: "OpenAI" },
-  { id: "google", name: "Google" }
+  { id: "google", name: "Google" },
+  { id: "volcengine", name: "Volcengine" }
 ]
 
 // Available models configuration (updated Jan 2026)
@@ -204,11 +211,29 @@ const AVAILABLE_MODELS: ModelConfig[] = [
   }
 ]
 
+function getStoredCustomModels(): StoredCustomModel[] {
+  return store.get(CUSTOM_MODELS_KEY, []) as StoredCustomModel[]
+}
+
+function setStoredCustomModels(models: StoredCustomModel[]): void {
+  store.set(CUSTOM_MODELS_KEY, models)
+}
+
+function getAllModels(): ModelConfig[] {
+  const baseModels = AVAILABLE_MODELS.map((model) => ({ ...model, custom: false }))
+  const customModels = getStoredCustomModels().map((model) => ({
+    ...model,
+    available: true,
+    custom: true
+  }))
+  return [...baseModels, ...customModels]
+}
+
 export function registerModelHandlers(ipcMain: IpcMain): void {
   // List available models
   ipcMain.handle("models:list", async () => {
     // Check which models have API keys configured
-    return AVAILABLE_MODELS.map((model) => ({
+    return getAllModels().map((model) => ({
       ...model,
       available: hasApiKey(model.provider)
     }))
@@ -222,6 +247,44 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
   // Set default model
   ipcMain.handle("models:setDefault", async (_event, modelId: string) => {
     store.set("defaultModel", modelId)
+  })
+
+  // Add custom model (e.g., Volcengine Ark endpoint)
+  ipcMain.handle("models:addCustom", async (_event, params: AddCustomModelParams) => {
+    const id = params.id.trim()
+    if (!id) {
+      throw new Error("Model ID is required")
+    }
+
+    if (params.provider !== "volcengine") {
+      throw new Error("Custom models are only supported for Volcengine")
+    }
+
+    const existing = new Set(getAllModels().map((model) => model.id))
+    if (existing.has(id)) {
+      throw new Error(`Model ID already exists: ${id}`)
+    }
+
+    const model = (params.model || id).trim()
+    const name = (params.name || id).trim()
+    const description = params.description?.trim() || "Custom Volcengine Ark model"
+
+    const next = [
+      ...getStoredCustomModels(),
+      { id, provider: params.provider, model, name, description }
+    ]
+    setStoredCustomModels(next)
+  })
+
+  // Delete custom model
+  ipcMain.handle("models:deleteCustom", async (_event, modelId: string) => {
+    const next = getStoredCustomModels().filter((model) => model.id !== modelId)
+    setStoredCustomModels(next)
+
+    const defaultModel = store.get("defaultModel", DEFAULT_MODEL_ID) as string
+    if (defaultModel === modelId) {
+      store.set("defaultModel", DEFAULT_MODEL_ID)
+    }
   })
 
   // Set API key for a provider (stored in ~/.openwork/.env)
@@ -519,5 +582,9 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
 export { getApiKey } from "../storage"
 
 export function getDefaultModel(): string {
-  return store.get("defaultModel", "claude-sonnet-4-5-20250929") as string
+  return store.get("defaultModel", DEFAULT_MODEL_ID) as string
+}
+
+export function getModelConfig(modelId: string): ModelConfig | undefined {
+  return getAllModels().find((model) => model.id === modelId)
 }

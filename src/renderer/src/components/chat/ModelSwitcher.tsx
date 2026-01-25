@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react"
-import { ChevronDown, Check, AlertCircle, Key } from "lucide-react"
+import { ChevronDown, Check, AlertCircle, Key, Plus } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { useCurrentThread } from "@/lib/thread-context"
 import { cn } from "@/lib/utils"
 import { ApiKeyDialog } from "./ApiKeyDialog"
+import { VolcengineModelDialog } from "./VolcengineModelDialog"
 import type { Provider, ProviderId } from "@/types"
 
 // Provider icons as simple SVG components
@@ -33,10 +34,35 @@ function GoogleIcon({ className }: { className?: string }): React.JSX.Element {
   )
 }
 
+function VolcengineIcon({ className }: { className?: string }): React.JSX.Element {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-label="Volcengine">
+      <title>Volcengine</title>
+      <path
+        d="M19.44 10.153l-2.936 11.586a.215.215 0 00.214.261h5.87a.215.215 0 00.214-.261l-2.95-11.586a.214.214 0 00-.412 0zM3.28 12.778l-2.275 8.96A.214.214 0 001.22 22h4.532a.212.212 0 00.214-.165.214.214 0 000-.097l-2.276-8.96a.214.214 0 00-.41 0z"
+        fill="#00E5E5"
+      />
+      <path
+        d="M7.29 5.359L3.148 21.738a.215.215 0 00.203.261h8.29a.214.214 0 00.215-.261L7.7 5.358a.214.214 0 00-.41 0z"
+        fill="#006EFF"
+      />
+      <path
+        d="M14.44.15a.214.214 0 00-.41 0L8.366 21.739a.214.214 0 00.214.261H19.9a.216.216 0 00.171-.078.214.214 0 00.044-.183L14.439.15z"
+        fill="#006EFF"
+      />
+      <path
+        d="M10.278 7.741L6.685 21.736a.214.214 0 00.214.264h7.17a.215.215 0 00.214-.264L10.688 7.741a.214.214 0 00-.41 0z"
+        fill="#00E5E5"
+      />
+    </svg>
+  )
+}
+
 const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
   anthropic: AnthropicIcon,
   openai: OpenAIIcon,
   google: GoogleIcon,
+  volcengine: VolcengineIcon,
   ollama: () => null // No icon for ollama yet
 }
 
@@ -44,7 +70,8 @@ const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
 const FALLBACK_PROVIDERS: Provider[] = [
   { id: "anthropic", name: "Anthropic", hasApiKey: false },
   { id: "openai", name: "OpenAI", hasApiKey: false },
-  { id: "google", name: "Google", hasApiKey: false }
+  { id: "google", name: "Google", hasApiKey: false },
+  { id: "volcengine", name: "Volcengine", hasApiKey: false }
 ]
 
 interface ModelSwitcherProps {
@@ -56,6 +83,7 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
   const [selectedProviderId, setSelectedProviderId] = useState<ProviderId | null>(null)
   const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false)
   const [apiKeyProvider, setApiKeyProvider] = useState<Provider | null>(null)
+  const [volcDialogOpen, setVolcDialogOpen] = useState(false)
 
   const { models, providers, loadModels, loadProviders } = useAppStore()
   const { currentModel, setCurrentModel } = useCurrentThread(threadId)
@@ -100,6 +128,13 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
     if (!isOpen) {
       // Refresh providers after dialog closes
       loadProviders()
+      loadModels()
+    }
+  }
+
+  function handleVolcengineDialogClose(isOpen: boolean): void {
+    setVolcDialogOpen(isOpen)
+    if (!isOpen) {
       loadModels()
     }
   }
@@ -173,9 +208,17 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
                   <p className="text-xs text-muted-foreground mb-3">
                     API key required for {selectedProvider.name}
                   </p>
-                  <Button size="sm" onClick={() => handleConfigureApiKey(selectedProvider)}>
-                    Configure API Key
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button size="sm" onClick={() => handleConfigureApiKey(selectedProvider)}>
+                      Configure API Key
+                    </Button>
+                    {selectedProvider.id === "volcengine" && (
+                      <Button size="sm" variant="outline" onClick={() => setVolcDialogOpen(true)}>
+                        <Plus className="size-3.5 mr-1" />
+                        Add Model
+                      </Button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 // Show models list with scrollable area
@@ -206,13 +249,24 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
 
                   {/* Configure API key link for providers that have a key */}
                   {selectedProvider?.hasApiKey && (
-                    <button
-                      onClick={() => handleConfigureApiKey(selectedProvider)}
-                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-sm text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors mt-2 border-t border-border pt-2"
-                    >
-                      <Key className="size-3.5" />
-                      <span>Edit API Key</span>
-                    </button>
+                    <div className="mt-2 border-t border-border pt-2 space-y-1">
+                      <button
+                        onClick={() => handleConfigureApiKey(selectedProvider)}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 rounded-sm text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                      >
+                        <Key className="size-3.5" />
+                        <span>Edit API Key</span>
+                      </button>
+                      {selectedProvider.id === "volcengine" && (
+                        <button
+                          onClick={() => setVolcDialogOpen(true)}
+                          className="w-full flex items-center gap-2 px-2 py-1.5 rounded-sm text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                        >
+                          <Plus className="size-3.5" />
+                          <span>Add Model</span>
+                        </button>
+                      )}
+                    </div>
                   )}
                 </div>
               )}
@@ -226,6 +280,8 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
         onOpenChange={handleApiKeyDialogClose}
         provider={apiKeyProvider}
       />
+
+      <VolcengineModelDialog open={volcDialogOpen} onOpenChange={handleVolcengineDialogClose} />
     </>
   )
 }

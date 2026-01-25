@@ -146,6 +146,18 @@ const api = {
     getApiKey: (provider: string): Promise<string | null> => {
       return ipcRenderer.invoke("models:getApiKey", provider)
     },
+    addCustomModel: (params: {
+      id: string
+      provider: string
+      model?: string
+      name?: string
+      description?: string
+    }): Promise<void> => {
+      return ipcRenderer.invoke("models:addCustom", params)
+    },
+    deleteCustomModel: (modelId: string): Promise<void> => {
+      return ipcRenderer.invoke("models:deleteCustom", modelId)
+    },
     deleteApiKey: (provider: string): Promise<void> => {
       return ipcRenderer.invoke("models:deleteApiKey", provider)
     }
