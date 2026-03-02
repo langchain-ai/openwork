@@ -160,10 +160,3 @@ We use labels to organize issues:
 ## Questions?
 
 Open an issue or start a discussion on GitHub.
-changes
-
-- `chore:` Build/tooling changes
-
-## Questions?
-
-Open an issue or start a discussion on GitHub.
