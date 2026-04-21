@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { ChevronDown, Check, AlertCircle, Key } from "lucide-react"
+import { ChevronDown, Check, AlertCircle, Key, Bot } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
@@ -37,14 +37,15 @@ const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
   anthropic: AnthropicIcon,
   openai: OpenAIIcon,
   google: GoogleIcon,
-  ollama: () => null // No icon for ollama yet
+  ollama: Bot
 }
 
 // Fallback providers in case the backend hasn't loaded them yet
 const FALLBACK_PROVIDERS: Provider[] = [
   { id: "anthropic", name: "Anthropic", hasApiKey: false },
   { id: "openai", name: "OpenAI", hasApiKey: false },
-  { id: "google", name: "Google", hasApiKey: false }
+  { id: "google", name: "Google", hasApiKey: false },
+  { id: "ollama", name: "Ollama", hasApiKey: true }
 ]
 
 interface ModelSwitcherProps {
@@ -76,10 +77,13 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
     (displayProviders.length > 0 ? displayProviders[0].id : null)
 
   const selectedModel = models.find((m) => m.id === currentModel)
+  const SelectedProviderIcon = selectedModel ? PROVIDER_ICONS[selectedModel.provider] : null
   const filteredModels = effectiveProviderId
     ? models.filter((m) => m.provider === effectiveProviderId)
     : []
   const selectedProvider = displayProviders.find((p) => p.id === effectiveProviderId)
+
+  const providerRequiresApiKey = selectedProvider?.id !== "ollama"
 
   function handleProviderClick(provider: Provider): void {
     setSelectedProviderId(provider.id)
@@ -115,7 +119,7 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
           >
             {selectedModel ? (
               <>
-                {PROVIDER_ICONS[selectedModel.provider]?.({ className: "size-3.5" })}
+                {SelectedProviderIcon && <SelectedProviderIcon className="size-3.5" />}
                 <span className="font-mono">{selectedModel.id}</span>
               </>
             ) : (
@@ -151,7 +155,7 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
                     >
                       {Icon && <Icon className="size-3.5 shrink-0" />}
                       <span className="flex-1 truncate">{provider.name}</span>
-                      {!provider.hasApiKey && (
+                      {provider.id !== "ollama" && !provider.hasApiKey && (
                         <AlertCircle className="size-3 text-status-warning shrink-0" />
                       )}
                     </button>
@@ -166,7 +170,7 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
                 Model
               </div>
 
-              {selectedProvider && !selectedProvider.hasApiKey ? (
+              {selectedProvider && providerRequiresApiKey && !selectedProvider.hasApiKey ? (
                 // No API key configured
                 <div className="flex flex-col items-center justify-center h-[180px] px-4 text-center">
                   <Key className="size-6 text-muted-foreground mb-2" />
@@ -200,12 +204,16 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
                     ))}
 
                     {filteredModels.length === 0 && (
-                      <p className="text-xs text-muted-foreground px-2 py-4">No models available</p>
+                      <p className="text-xs text-muted-foreground px-2 py-4">
+                        {selectedProvider?.id === "ollama"
+                          ? "No Ollama models found. Run ollama serve, then pull a model like llama3.1:8b."
+                          : "No models available"}
+                      </p>
                     )}
                   </div>
 
                   {/* Configure API key link for providers that have a key */}
-                  {selectedProvider?.hasApiKey && (
+                  {selectedProvider?.hasApiKey && selectedProvider.id !== "ollama" && (
                     <button
                       onClick={() => handleConfigureApiKey(selectedProvider)}
                       className="w-full flex items-center gap-2 px-2 py-1.5 rounded-sm text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors mt-2 border-t border-border pt-2"
@@ -213,6 +221,12 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
                       <Key className="size-3.5" />
                       <span>Edit API Key</span>
                     </button>
+                  )}
+
+                  {selectedProvider?.id === "ollama" && (
+                    <div className="mt-2 border-t border-border px-2 pt-2 text-[11px] text-muted-foreground">
+                      Uses your local Ollama server at OLLAMA_BASE_URL or http://127.0.0.1:11434.
+                    </div>
                   )}
                 </div>
               )}

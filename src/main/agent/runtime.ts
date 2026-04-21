@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createDeepAgent } from "deepagents"
 import { getDefaultModel } from "../ipc/models"
-import { getApiKey, getThreadCheckpointPath } from "../storage"
+import { getApiKey, getOllamaBaseUrl, getThreadCheckpointPath } from "../storage"
 import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatOpenAI } from "@langchain/openai"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
+import { ChatOllama } from "@langchain/ollama"
 import { SqlJsSaver } from "../checkpointer/sqljs-saver"
 import { LocalSandbox } from "./local-sandbox"
 
@@ -61,7 +62,7 @@ export async function closeCheckpointer(threadId: string): Promise<void> {
 // Get the appropriate model instance based on configuration
 function getModelInstance(
   modelId?: string
-): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
+): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | ChatOllama {
   const model = modelId || getDefaultModel()
   console.log("[Runtime] Using model:", model)
 
@@ -103,8 +104,12 @@ function getModelInstance(
     })
   }
 
-  // Default to model string (let deepagents handle it)
-  return model
+  const baseUrl = getOllamaBaseUrl()
+  console.log("[Runtime] Using Ollama base URL:", baseUrl)
+  return new ChatOllama({
+    model,
+    baseUrl
+  })
 }
 
 export interface CreateAgentRuntimeOptions {

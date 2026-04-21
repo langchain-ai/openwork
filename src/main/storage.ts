@@ -5,6 +5,7 @@ import type { ProviderId } from "./types"
 
 const OPENWORK_DIR = join(homedir(), ".openwork")
 const ENV_FILE = join(OPENWORK_DIR, ".env")
+const DEFAULT_OLLAMA_BASE_URL = "http://127.0.0.1:11434"
 
 // Environment variable names for each provider
 const ENV_VAR_NAMES: Record<ProviderId, string> = {
@@ -52,6 +53,25 @@ export function getEnvFilePath(): string {
   return ENV_FILE
 }
 
+export function getEnvValue(name: string): string | undefined {
+  const env = parseEnvFile()
+  if (env[name]) return env[name]
+  return process.env[name]
+}
+
+function normalizeOllamaBaseUrl(value: string | undefined): string | undefined {
+  if (!value) return undefined
+
+  const trimmed = value.trim()
+  if (!trimmed) return undefined
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed
+  }
+
+  return `http://${trimmed}`
+}
+
 // Read .env file and parse into object
 function parseEnvFile(): Record<string, string> {
   const envPath = getEnvFilePath()
@@ -87,12 +107,7 @@ export function getApiKey(provider: string): string | undefined {
   const envVarName = ENV_VAR_NAMES[provider]
   if (!envVarName) return undefined
 
-  // Check .env file first
-  const env = parseEnvFile()
-  if (env[envVarName]) return env[envVarName]
-
-  // Fall back to process environment
-  return process.env[envVarName]
+  return getEnvValue(envVarName)
 }
 
 export function setApiKey(provider: string, apiKey: string): void {
@@ -121,4 +136,12 @@ export function deleteApiKey(provider: string): void {
 
 export function hasApiKey(provider: string): boolean {
   return !!getApiKey(provider)
+}
+
+export function getOllamaBaseUrl(): string {
+  return (
+    normalizeOllamaBaseUrl(getEnvValue("OLLAMA_BASE_URL")) ??
+    normalizeOllamaBaseUrl(getEnvValue("OLLAMA_HOST")) ??
+    DEFAULT_OLLAMA_BASE_URL
+  )
 }
