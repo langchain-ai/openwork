@@ -5,13 +5,21 @@ import * as path from "path"
 import type {
   ModelConfig,
   Provider,
+  ProviderId,
   SetApiKeyParams,
   WorkspaceSetParams,
   WorkspaceLoadParams,
   WorkspaceFileParams
 } from "../types"
 import { startWatching, stopWatching } from "../services/workspace-watcher"
-import { getOpenworkDir, getApiKey, setApiKey, deleteApiKey, hasApiKey } from "../storage"
+import {
+  getOpenworkDir,
+  getApiKey,
+  setApiKey,
+  deleteApiKey,
+  hasApiKey,
+  getOllamaBaseUrl
+} from "../storage"
 
 // Store for non-sensitive settings only (no encryption needed)
 const store = new Store({
@@ -23,7 +31,8 @@ const store = new Store({
 const PROVIDERS: Omit<Provider, "hasApiKey">[] = [
   { id: "anthropic", name: "Anthropic" },
   { id: "openai", name: "OpenAI" },
-  { id: "google", name: "Google" }
+  { id: "google", name: "Google" },
+  { id: "ollama", name: "Ollama" }
 ]
 
 // Available models configuration (updated Jan 2026)
@@ -204,13 +213,87 @@ const AVAILABLE_MODELS: ModelConfig[] = [
   }
 ]
 
+interface OllamaTagsResponse {
+  models?: Array<{
+    name: string
+    model?: string
+    size?: number
+    details?: {
+      family?: string
+      parameter_size?: string
+    }
+  }>
+}
+
+function isProviderConfigured(providerId: ProviderId): boolean {
+  if (providerId === "ollama") {
+    return true
+  }
+
+  return hasApiKey(providerId)
+}
+
+function formatBytes(size?: number): string | undefined {
+  if (!size || Number.isNaN(size)) return undefined
+
+  const units = ["B", "KB", "MB", "GB", "TB"]
+  let value = size
+  let unitIndex = 0
+
+  while (value >= 1024 && unitIndex < units.length - 1) {
+    value /= 1024
+    unitIndex += 1
+  }
+
+  const digits = value >= 10 || unitIndex === 0 ? 0 : 1
+  return `${value.toFixed(digits)} ${units[unitIndex]}`
+}
+
+async function listOllamaModels(): Promise<ModelConfig[]> {
+  const baseUrl = getOllamaBaseUrl().replace(/\/$/, "")
+
+  try {
+    const response = await fetch(`${baseUrl}/api/tags`, {
+      signal: AbortSignal.timeout(3000)
+    })
+
+    if (!response.ok) {
+      console.warn(`[Models] Ollama tags request failed: ${response.status}`)
+      return []
+    }
+
+    const data = (await response.json()) as OllamaTagsResponse
+
+    return (data.models ?? []).map((model) => {
+      const detailParts = [
+        model.details?.family,
+        model.details?.parameter_size,
+        formatBytes(model.size)
+      ].filter(Boolean)
+
+      return {
+        id: model.name,
+        name: model.name,
+        provider: "ollama",
+        model: model.model ?? model.name,
+        description: detailParts.join(" • ") || `Local Ollama model from ${baseUrl}`,
+        available: true
+      }
+    })
+  } catch (error) {
+    console.warn("[Models] Failed to list Ollama models:", error)
+    return []
+  }
+}
+
 export function registerModelHandlers(ipcMain: IpcMain): void {
   // List available models
   ipcMain.handle("models:list", async () => {
-    // Check which models have API keys configured
-    return AVAILABLE_MODELS.map((model) => ({
+    const ollamaModels = await listOllamaModels()
+
+    return [...AVAILABLE_MODELS, ...ollamaModels].map((model) => ({
       ...model,
-      available: hasApiKey(model.provider)
+      available: isProviderConfigured(model.provider)
     }))
   })
 
@@ -243,7 +326,7 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
   ipcMain.handle("models:listProviders", async () => {
     return PROVIDERS.map((provider) => ({
       ...provider,
-      hasApiKey: hasApiKey(provider.id)
+      hasApiKey: isProviderConfigured(provider.id)
     }))
   })
 
