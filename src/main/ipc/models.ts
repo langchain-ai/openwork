@@ -6,12 +6,13 @@ import type {
   ModelConfig,
   Provider,
   SetApiKeyParams,
+  SetBaseUrlParams,
   WorkspaceSetParams,
   WorkspaceLoadParams,
   WorkspaceFileParams
 } from "../types"
 import { startWatching, stopWatching } from "../services/workspace-watcher"
-import { getOpenworkDir, getApiKey, setApiKey, deleteApiKey, hasApiKey } from "../storage"
+import { getOpenworkDir, getApiKey, setApiKey, deleteApiKey, hasApiKey, getBaseUrl, setBaseUrl, deleteBaseUrl } from "../storage"
 
 // Store for non-sensitive settings only (no encryption needed)
 const store = new Store({
@@ -237,6 +238,21 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
   // Delete API key for a provider
   ipcMain.handle("models:deleteApiKey", async (_event, provider: string) => {
     deleteApiKey(provider)
+  })
+
+  // Set base URL for a provider (stored in ~/.openwork/.env)
+  ipcMain.handle("models:setBaseUrl", async (_event, { provider, baseUrl }: SetBaseUrlParams) => {
+    setBaseUrl(provider, baseUrl)
+  })
+
+  // Get base URL for a provider (from ~/.openwork/.env or process.env)
+  ipcMain.handle("models:getBaseUrl", async (_event, provider: string) => {
+    return getBaseUrl(provider) ?? null
+  })
+
+  // Delete base URL for a provider
+  ipcMain.handle("models:deleteBaseUrl", async (_event, provider: string) => {
+    deleteBaseUrl(provider)
   })
 
   // List providers with their API key status
