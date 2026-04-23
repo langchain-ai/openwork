@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createDeepAgent } from "deepagents"
-import { getDefaultModel } from "../ipc/models"
+import { getDefaultModel, AVAILABLE_MODELS } from "../ipc/models"
 import { getApiKey, getThreadCheckpointPath } from "../storage"
 import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatOpenAI } from "@langchain/openai"
@@ -65,8 +65,12 @@ function getModelInstance(
   const model = modelId || getDefaultModel()
   console.log("[Runtime] Using model:", model)
 
-  // Determine provider from model ID
-  if (model.startsWith("claude")) {
+  // Check if model is in our known cloud provider list
+  const knownModel = AVAILABLE_MODELS.find((m) => m.id === model || m.model === model)
+
+  // 1. ANTHROPIC
+  // Check known model OR fallback prefix check (for backwards compat)
+  if (knownModel?.provider === "anthropic" || (!knownModel && model.startsWith("claude"))) {
     const apiKey = getApiKey("anthropic")
     console.log("[Runtime] Anthropic API key present:", !!apiKey)
     if (!apiKey) {
@@ -76,11 +80,20 @@ function getModelInstance(
       model,
       anthropicApiKey: apiKey
     })
-  } else if (
-    model.startsWith("gpt") ||
-    model.startsWith("o1") ||
-    model.startsWith("o3") ||
-    model.startsWith("o4")
+  }
+
+  // 2. OPENAI
+  // Only use OpenAI provider if it's a configured cloud model OR matches known prefixes AND isn't excluded
+  else if (
+    knownModel?.provider === "openai" ||
+    (!knownModel &&
+      // More specific checks for official OpenAI models to avoid capturing local "gpt-*" models
+      ((model.startsWith("gpt-") && !model.includes("oss") && !model.includes("local")) ||
+        model.startsWith("o1-") ||
+        model.startsWith("o1") ||
+        model.startsWith("o3-") ||
+        model.startsWith("o3") ||
+        model.startsWith("o4-")))
   ) {
     const apiKey = getApiKey("openai")
     console.log("[Runtime] OpenAI API key present:", !!apiKey)
@@ -91,7 +104,10 @@ function getModelInstance(
       model,
       openAIApiKey: apiKey
     })
-  } else if (model.startsWith("gemini")) {
+  }
+
+  // 3. GOOGLE
+  else if (knownModel?.provider === "google" || (!knownModel && model.startsWith("gemini"))) {
     const apiKey = getApiKey("google")
     console.log("[Runtime] Google API key present:", !!apiKey)
     if (!apiKey) {
@@ -103,8 +119,19 @@ function getModelInstance(
     })
   }
 
-  // Default to model string (let deepagents handle it)
-  return model
+  // 4. FALLBACK -> LOCAL / OLLAMA
+  else {
+    // Assume Ollama / Local OpenAI-compatible model
+    // This allows using models like "gpt-oss:...", "llama3", etc.
+    console.log("[Runtime] Using local/Ollama model:", model)
+    return new ChatOpenAI({
+      model,
+      configuration: {
+        baseURL: "http://127.0.0.1:11434/v1"
+      },
+      apiKey: "ollama" // Required by SDK but ignored by Ollama
+    })
+  }
 }
 
 export interface CreateAgentRuntimeOptions {

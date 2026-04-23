@@ -3,12 +3,13 @@ import * as path from "path"
 import { BrowserWindow } from "electron"
 
 // Store active watchers by thread ID
-const activeWatchers = new Map<string, fs.FSWatcher>()
+const activeWatchers = new Map<string, { watcher: fs.FSWatcher; timer?: NodeJS.Timeout }>()
 
 // Debounce timers to prevent rapid-fire updates
 const debounceTimers = new Map<string, NodeJS.Timeout>()
 
 const DEBOUNCE_DELAY = 500 // ms
+const POLLING_INTERVAL = 4000 // 4s safety poll for reliable updates
 
 /**
  * Start watching a workspace directory for file changes.
@@ -31,8 +32,9 @@ export function startWatching(threadId: string, workspacePath: string): void {
   }
 
   try {
+    // 1. Native FS Watcher
     // Use recursive watching (supported on macOS and Windows)
-    const watcher = fs.watch(workspacePath, { recursive: true }, (eventType, filename) => {
+    const fsWatcher = fs.watch(workspacePath, { recursive: true }, (eventType, filename) => {
       // Skip hidden files and common non-project files
       if (filename) {
         const parts = filename.split(path.sep)
@@ -57,12 +59,18 @@ export function startWatching(threadId: string, workspacePath: string): void {
       debounceTimers.set(threadId, timer)
     })
 
-    watcher.on("error", (error) => {
+    fsWatcher.on("error", (error) => {
       console.error(`[WorkspaceWatcher] Error watching ${workspacePath}:`, error)
-      stopWatching(threadId)
+      // Don't fully stop on error, the polling will pick it up
     })
 
-    activeWatchers.set(threadId, watcher)
+    // 2. Safety Polling Interval
+    // Ensures UI updates even if fs.watch fails (common on network/virtual drives like A:\)
+    const pollTimer = setInterval(() => {
+      notifyRenderer(threadId, workspacePath)
+    }, POLLING_INTERVAL)
+
+    activeWatchers.set(threadId, { watcher: fsWatcher, timer: pollTimer })
     console.log(`[WorkspaceWatcher] Started watching ${workspacePath} for thread ${threadId}`)
   } catch (e) {
     console.error(`[WorkspaceWatcher] Failed to start watching ${workspacePath}:`, e)
@@ -73,9 +81,10 @@ export function startWatching(threadId: string, workspacePath: string): void {
  * Stop watching the workspace for a specific thread.
  */
 export function stopWatching(threadId: string): void {
-  const watcher = activeWatchers.get(threadId)
-  if (watcher) {
-    watcher.close()
+  const active = activeWatchers.get(threadId)
+  if (active) {
+    active.watcher.close()
+    if (active.timer) clearInterval(active.timer)
     activeWatchers.delete(threadId)
     console.log(`[WorkspaceWatcher] Stopped watching for thread ${threadId}`)
   }
