@@ -112,6 +112,10 @@
     "minimatch@9": ">=9.0.7",
     "rollup": ">=4.59.0",
     "picomatch@4": ">=4.0.4",
+    "postcss": "8.5.18",
+    "fast-uri": "3.1.4",
+    "js-yaml": "4.3.0",
+    "brace-expansion": "5.0.8",
     "tinyglobby": {
       "picomatch": ">=4.0.4"
     }
