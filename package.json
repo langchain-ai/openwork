@@ -92,7 +92,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.1.1",
-    "electron": "^39.2.6",
+    "electron": "^39.8.10",
     "electron-vite": "^5.0.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react": "^7.37.5",
@@ -113,8 +113,8 @@
     "rollup": ">=4.59.0",
     "picomatch@4": ">=4.0.4",
     "postcss": "8.5.18",
-    "fast-uri": "3.1.4",
-    "js-yaml": "4.3.0",
+    "fast-uri": "3.1.5",
+    "js-yaml": "4.3.1",
     "brace-expansion": "5.0.8",
     "tinyglobby": {
       "picomatch": ">=4.0.4"
