@@ -27,7 +27,7 @@ const PROVIDERS: Omit<Provider, "hasApiKey">[] = [
 ]
 
 // Available models configuration (updated Jan 2026)
-const AVAILABLE_MODELS: ModelConfig[] = [
+export const AVAILABLE_MODELS: ModelConfig[] = [
   // Anthropic Claude 4.5 series (latest as of Jan 2026)
   {
     id: "claude-opus-4-5-20251101",
@@ -207,11 +207,34 @@ const AVAILABLE_MODELS: ModelConfig[] = [
 export function registerModelHandlers(ipcMain: IpcMain): void {
   // List available models
   ipcMain.handle("models:list", async () => {
+    // Fetch Ollama models
+    let ollamaModels: ModelConfig[] = []
+    try {
+      const response = await fetch("http://127.0.0.1:11434/api/tags")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const data = (await response.json()) as any
+      if (data && data.models) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        ollamaModels = data.models.map((m: any) => ({
+          id: m.name,
+          name: m.name,
+          provider: "ollama",
+          model: m.name,
+          description: `Local Ollama model`,
+          available: true
+        }))
+      }
+    } catch (error) {
+      // Ollama not running or not reachable, just ignore
+    }
+
     // Check which models have API keys configured
-    return AVAILABLE_MODELS.map((model) => ({
+    const standardModels = AVAILABLE_MODELS.map((model) => ({
       ...model,
       available: hasApiKey(model.provider)
     }))
+
+    return [...standardModels, ...ollamaModels]
   })
 
   // Get default model
@@ -241,10 +264,19 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
 
   // List providers with their API key status
   ipcMain.handle("models:listProviders", async () => {
-    return PROVIDERS.map((provider) => ({
+    const providers = PROVIDERS.map((provider) => ({
       ...provider,
       hasApiKey: hasApiKey(provider.id)
     }))
+
+    // Add Ollama provider
+    providers.push({
+      id: "ollama" as any, // Cast to any if ProviderId type is strict in main process context
+      name: "Ollama (Local)",
+      hasApiKey: true
+    })
+
+    return providers
   })
 
   // Sync version info
@@ -357,9 +389,17 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
 
       // Recursively read directory
       async function readDir(dirPath: string, relativePath: string = ""): Promise<void> {
+        // If dirPath doesn't exist, we can't read it
+        try {
+          await fs.access(dirPath)
+        } catch {
+          return
+        }
+
         const entries = await fs.readdir(dirPath, { withFileTypes: true })
 
         for (const entry of entries) {
+
           // Skip hidden files and common non-project files
           if (entry.name.startsWith(".") || entry.name === "node_modules") {
             continue

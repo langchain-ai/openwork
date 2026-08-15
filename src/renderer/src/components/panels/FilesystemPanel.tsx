@@ -290,10 +290,10 @@ export function FilesystemPanel() {
             </span>
             <Button
               variant="ghost"
-              size="icon"
+              size="sm"
               onClick={handleRefresh}
               disabled={loading}
-              className="h-6 w-6"
+              className="h-6 px-2 text-xs gap-1.5"
               title="Refresh files"
             >
               {loading ? (
@@ -301,6 +301,7 @@ export function FilesystemPanel() {
               ) : (
                 <RefreshCw className="size-3" />
               )}
+              Refresh
             </Button>
             <Button
               variant="ghost"
