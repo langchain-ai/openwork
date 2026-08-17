@@ -148,6 +148,15 @@ const api = {
     },
     deleteApiKey: (provider: string): Promise<void> => {
       return ipcRenderer.invoke("models:deleteApiKey", provider)
+    },
+    setBaseUrl: (provider: string, baseUrl: string): Promise<void> => {
+      return ipcRenderer.invoke("models:setBaseUrl", { provider, baseUrl })
+    },
+    getBaseUrl: (provider: string): Promise<string | null> => {
+      return ipcRenderer.invoke("models:getBaseUrl", provider)
+    },
+    deleteBaseUrl: (provider: string): Promise<void> => {
+      return ipcRenderer.invoke("models:deleteBaseUrl", provider)
     }
   },
   workspace: {

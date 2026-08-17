@@ -122,3 +122,40 @@ export function deleteApiKey(provider: string): void {
 export function hasApiKey(provider: string): boolean {
   return !!getApiKey(provider)
 }
+
+// Base URL management for proxy/gateway support
+export function getBaseUrl(provider: string): string | undefined {
+  const envVarName = `${ENV_VAR_NAMES[provider]?.replace('_API_KEY', '')}_BASE_URL`
+  if (!envVarName) return undefined
+
+  // Check .env file first
+  const env = parseEnvFile()
+  if (env[envVarName]) return env[envVarName]
+
+  // Fall back to process environment
+  return process.env[envVarName]
+}
+
+export function setBaseUrl(provider: string, baseUrl: string): void {
+  const envVarName = `${ENV_VAR_NAMES[provider]?.replace('_API_KEY', '')}_BASE_URL`
+  if (!envVarName) return
+
+  const env = parseEnvFile()
+  env[envVarName] = baseUrl
+  writeEnvFile(env)
+
+  // Also set in process.env for current session
+  process.env[envVarName] = baseUrl
+}
+
+export function deleteBaseUrl(provider: string): void {
+  const envVarName = `${ENV_VAR_NAMES[provider]?.replace('_API_KEY', '')}_BASE_URL`
+  if (!envVarName) return
+
+  const env = parseEnvFile()
+  delete env[envVarName]
+  writeEnvFile(env)
+
+  // Also clear from process.env
+  delete process.env[envVarName]
+}
