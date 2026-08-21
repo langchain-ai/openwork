@@ -164,7 +164,7 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
       const config = {
         configurable: { thread_id: threadId },
         signal: abortController.signal,
-        streamMode: ["messages", "values"] as const,
+        streamMode: ["messages", "values"] as ["messages", "values"],
         recursionLimit: 1000
       }
 
@@ -246,7 +246,7 @@ export function registerAgentHandlers(ipcMain: IpcMain): void {
       const config = {
         configurable: { thread_id: threadId },
         signal: abortController.signal,
-        streamMode: ["messages", "values"] as const,
+        streamMode: ["messages", "values"] as ["messages", "values"],
         recursionLimit: 1000
       }
 
