@@ -8,10 +8,26 @@ import type {
   SetApiKeyParams,
   WorkspaceSetParams,
   WorkspaceLoadParams,
-  WorkspaceFileParams
+  WorkspaceFileParams,
+  CustomEndpoint,
+  CreateEndpointParams,
+  UpdateEndpointParams
 } from "../types"
 import { startWatching, stopWatching } from "../services/workspace-watcher"
-import { getOpenworkDir, getApiKey, setApiKey, deleteApiKey, hasApiKey } from "../storage"
+import {
+  getOpenworkDir,
+  getApiKey,
+  setApiKey,
+  deleteApiKey,
+  hasApiKey,
+  getCustomEndpoints,
+  getCustomEndpoint,
+  saveCustomEndpoint,
+  deleteCustomEndpoint,
+  getCustomEndpointApiKey,
+  setCustomEndpointApiKey,
+  hasCustomEndpointApiKey
+} from "../storage"
 
 // Store for non-sensitive settings only (no encryption needed)
 const store = new Store({
@@ -205,13 +221,35 @@ const AVAILABLE_MODELS: ModelConfig[] = [
 ]
 
 export function registerModelHandlers(ipcMain: IpcMain): void {
-  // List available models
+  // List available models (including custom endpoint models)
   ipcMain.handle("models:list", async () => {
-    // Check which models have API keys configured
-    return AVAILABLE_MODELS.map((model) => ({
+    // Built-in models with API key availability
+    const builtInModels = AVAILABLE_MODELS.map((model) => ({
       ...model,
       available: hasApiKey(model.provider)
     }))
+
+    // Custom endpoint models
+    const customEndpoints = getCustomEndpoints()
+    const customModels: ModelConfig[] = []
+
+    for (const endpoint of customEndpoints) {
+      if (endpoint.models && endpoint.models.length > 0) {
+        for (const modelName of endpoint.models) {
+          customModels.push({
+            id: `custom:${endpoint.id}:${modelName}`,
+            name: modelName,
+            provider: "custom",
+            model: modelName,
+            description: `via ${endpoint.name}`,
+            available: hasCustomEndpointApiKey(endpoint.id),
+            endpointId: endpoint.id
+          })
+        }
+      }
+    }
+
+    return [...builtInModels, ...customModels]
   })
 
   // Get default model
@@ -239,13 +277,182 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
     deleteApiKey(provider)
   })
 
-  // List providers with their API key status
+  // List providers with their API key status (including custom endpoints)
   ipcMain.handle("models:listProviders", async () => {
-    return PROVIDERS.map((provider) => ({
+    // Built-in providers
+    const builtInProviders = PROVIDERS.map((provider) => ({
       ...provider,
       hasApiKey: hasApiKey(provider.id)
     }))
+
+    // Custom endpoints as providers
+    const customEndpoints = getCustomEndpoints()
+    const customProviders: Provider[] = customEndpoints.map((endpoint) => ({
+      id: "custom" as const,
+      name: endpoint.name,
+      hasApiKey: hasCustomEndpointApiKey(endpoint.id),
+      endpointId: endpoint.id
+    }))
+
+    return [...builtInProviders, ...customProviders]
   })
+
+  // =============================================================================
+  // Custom Endpoint Handlers
+  // =============================================================================
+
+  // List all custom endpoints
+  ipcMain.handle("endpoints:list", async () => {
+    return getCustomEndpoints()
+  })
+
+  // Get a single custom endpoint
+  ipcMain.handle("endpoints:get", async (_event, id: string) => {
+    return getCustomEndpoint(id) ?? null
+  })
+
+  // Create a new custom endpoint
+  ipcMain.handle("endpoints:create", async (_event, params: CreateEndpointParams) => {
+    const { id, name, baseUrl, apiKey } = params
+
+    // Check if endpoint with this ID already exists
+    const existing = getCustomEndpoint(id)
+    if (existing) {
+      throw new Error(`Endpoint with ID "${id}" already exists`)
+    }
+
+    // Create endpoint
+    const endpoint: CustomEndpoint = {
+      id,
+      name,
+      baseUrl,
+      models: []
+    }
+
+    saveCustomEndpoint(endpoint)
+    setCustomEndpointApiKey(id, apiKey)
+
+    return endpoint
+  })
+
+  // Update an existing custom endpoint
+  ipcMain.handle("endpoints:update", async (_event, params: UpdateEndpointParams) => {
+    const { id, updates } = params
+
+    const existing = getCustomEndpoint(id)
+    if (!existing) {
+      throw new Error(`Endpoint with ID "${id}" not found`)
+    }
+
+    // Update endpoint properties
+    const updated: CustomEndpoint = {
+      ...existing,
+      ...updates
+    }
+
+    saveCustomEndpoint(updated)
+
+    // Update API key if provided
+    if (updates.apiKey) {
+      setCustomEndpointApiKey(id, updates.apiKey)
+    }
+
+    return updated
+  })
+
+  // Delete a custom endpoint
+  ipcMain.handle("endpoints:delete", async (_event, id: string) => {
+    deleteCustomEndpoint(id)
+  })
+
+  // Discover models from a custom endpoint's /models API
+  ipcMain.handle("endpoints:discoverModels", async (_event, id: string) => {
+    const endpoint = getCustomEndpoint(id)
+    if (!endpoint) {
+      throw new Error(`Endpoint with ID "${id}" not found`)
+    }
+
+    const apiKey = getCustomEndpointApiKey(id)
+    if (!apiKey) {
+      throw new Error(`No API key configured for endpoint "${id}"`)
+    }
+
+    // Normalize base URL (remove trailing slash)
+    const baseUrl = endpoint.baseUrl.replace(/\/+$/, "")
+    const modelsUrl = `${baseUrl}/models`
+
+    try {
+      const response = await fetch(modelsUrl, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json"
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch models: ${response.status} ${response.statusText}`)
+      }
+
+      const data = (await response.json()) as { data?: Array<{ id: string }> }
+
+      // OpenAI-compatible /models endpoint returns { data: [{ id: "model-name", ... }, ...] }
+      const models = data.data?.map((m) => m.id) ?? []
+
+      // Update endpoint with discovered models
+      const updated: CustomEndpoint = {
+        ...endpoint,
+        models
+      }
+      saveCustomEndpoint(updated)
+
+      return models
+    } catch (error) {
+      throw new Error(
+        `Failed to discover models: ${error instanceof Error ? error.message : "Unknown error"}`
+      )
+    }
+  })
+
+  // Test connection to a custom endpoint (validates API key and base URL)
+  ipcMain.handle(
+    "endpoints:testConnection",
+    async (_event, { baseUrl, apiKey }: { baseUrl: string; apiKey: string }) => {
+      // Normalize base URL (remove trailing slash)
+      const normalizedUrl = baseUrl.replace(/\/+$/, "")
+      const modelsUrl = `${normalizedUrl}/models`
+
+      try {
+        const response = await fetch(modelsUrl, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json"
+          }
+        })
+
+        if (!response.ok) {
+          return {
+            success: false,
+            error: `HTTP ${response.status}: ${response.statusText}`
+          }
+        }
+
+        const data = (await response.json()) as { data?: Array<{ id: string }> }
+        const models = data.data?.map((m) => m.id) ?? []
+
+        return {
+          success: true,
+          models
+        }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Connection failed"
+        }
+      }
+    }
+  )
 
   // Sync version info
   ipcMain.on("app:version", (event) => {

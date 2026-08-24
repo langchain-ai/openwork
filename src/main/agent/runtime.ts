@@ -1,7 +1,12 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createDeepAgent } from "deepagents"
 import { getDefaultModel } from "../ipc/models"
-import { getApiKey, getThreadCheckpointPath } from "../storage"
+import {
+  getApiKey,
+  getThreadCheckpointPath,
+  getCustomEndpoint,
+  getCustomEndpointApiKey
+} from "../storage"
 import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatOpenAI } from "@langchain/openai"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
@@ -58,12 +63,67 @@ export async function closeCheckpointer(threadId: string): Promise<void> {
   }
 }
 
+// Parse custom endpoint model ID format: "custom:endpoint-id:model-name"
+function parseCustomModelId(modelId: string): { endpointId: string; modelName: string } | null {
+  if (!modelId.startsWith("custom:")) {
+    return null
+  }
+
+  const parts = modelId.split(":")
+  if (parts.length < 3) {
+    return null
+  }
+
+  // Format: custom:endpoint-id:model-name (model name may contain colons)
+  const endpointId = parts[1]
+  const modelName = parts.slice(2).join(":")
+
+  return { endpointId, modelName }
+}
+
 // Get the appropriate model instance based on configuration
 function getModelInstance(
   modelId?: string
 ): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
   const model = modelId || getDefaultModel()
   console.log("[Runtime] Using model:", model)
+
+  // Check for custom endpoint model format: "custom:endpoint-id:model-name"
+  const customModel = parseCustomModelId(model)
+  if (customModel) {
+    const { endpointId, modelName } = customModel
+
+    const endpoint = getCustomEndpoint(endpointId)
+    if (!endpoint) {
+      throw new Error(`Custom endpoint "${endpointId}" not found`)
+    }
+
+    const apiKey = getCustomEndpointApiKey(endpointId)
+    if (!apiKey) {
+      throw new Error(`API key not configured for custom endpoint "${endpointId}"`)
+    }
+
+    // Normalize base URL (remove trailing slash)
+    const baseURL = endpoint.baseUrl.replace(/\/+$/, "")
+
+    console.log("[Runtime] Using custom endpoint:", endpoint.name, "model:", modelName)
+
+    // For custom OpenAI-compatible endpoints:
+    // - openAIApiKey: LangChain's parameter for the API key
+    // - configuration.baseURL: Sets the custom endpoint URL
+    // - configuration.apiKey: Ensures the underlying OpenAI SDK also has the key
+    // We also set OPENAI_API_KEY in env as a fallback for SDK lazy initialization
+    process.env.OPENAI_API_KEY = apiKey
+
+    return new ChatOpenAI({
+      modelName: modelName,
+      openAIApiKey: apiKey,
+      configuration: {
+        baseURL,
+        apiKey
+      }
+    })
+  }
 
   // Determine provider from model ID
   if (model.startsWith("claude")) {

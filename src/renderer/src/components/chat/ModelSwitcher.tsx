@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react"
-import { ChevronDown, Check, AlertCircle, Key } from "lucide-react"
+import { ChevronDown, Check, AlertCircle, Key, Plus, Server, Settings } from "lucide-react"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { useAppStore } from "@/lib/store"
 import { useCurrentThread } from "@/lib/thread-context"
 import { cn } from "@/lib/utils"
 import { ApiKeyDialog } from "./ApiKeyDialog"
-import type { Provider, ProviderId } from "@/types"
+import { CustomEndpointDialog } from "./CustomEndpointDialog"
+import type { Provider, ProviderId, CustomEndpoint } from "@/types"
 
 // Provider icons as simple SVG components
 function AnthropicIcon({ className }: { className?: string }): React.JSX.Element {
@@ -33,11 +34,16 @@ function GoogleIcon({ className }: { className?: string }): React.JSX.Element {
   )
 }
 
+function CustomEndpointIcon({ className }: { className?: string }): React.JSX.Element {
+  return <Server className={className} />
+}
+
 const PROVIDER_ICONS: Record<ProviderId, React.FC<{ className?: string }>> = {
   anthropic: AnthropicIcon,
   openai: OpenAIIcon,
   google: GoogleIcon,
-  ollama: () => null // No icon for ollama yet
+  ollama: () => null, // No icon for ollama yet
+  custom: CustomEndpointIcon
 }
 
 // Fallback providers in case the backend hasn't loaded them yet
@@ -54,35 +60,87 @@ interface ModelSwitcherProps {
 export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Element {
   const [open, setOpen] = useState(false)
   const [selectedProviderId, setSelectedProviderId] = useState<ProviderId | null>(null)
+  const [selectedEndpointId, setSelectedEndpointId] = useState<string | null>(null)
   const [apiKeyDialogOpen, setApiKeyDialogOpen] = useState(false)
   const [apiKeyProvider, setApiKeyProvider] = useState<Provider | null>(null)
+  const [endpointDialogOpen, setEndpointDialogOpen] = useState(false)
+  const [editingEndpoint, setEditingEndpoint] = useState<CustomEndpoint | null>(null)
+  const [customEndpoints, setCustomEndpoints] = useState<CustomEndpoint[]>([])
 
   const { models, providers, loadModels, loadProviders } = useAppStore()
   const { currentModel, setCurrentModel } = useCurrentThread(threadId)
 
-  // Load models and providers on mount
+  // Load models, providers, and custom endpoints on mount
   useEffect(() => {
     loadModels()
     loadProviders()
+
+    async function fetchCustomEndpoints(): Promise<void> {
+      try {
+        const endpoints = await window.api.endpoints.list()
+        setCustomEndpoints(endpoints)
+      } catch (e) {
+        console.error("Failed to load custom endpoints:", e)
+      }
+    }
+    fetchCustomEndpoints()
   }, [loadModels, loadProviders])
+
+  async function loadCustomEndpoints(): Promise<void> {
+    try {
+      const endpoints = await window.api.endpoints.list()
+      setCustomEndpoints(endpoints)
+    } catch (e) {
+      console.error("Failed to load custom endpoints:", e)
+    }
+  }
 
   // Use fallback providers if none loaded
   const displayProviders = providers.length > 0 ? providers : FALLBACK_PROVIDERS
+
+  // Separate built-in providers from custom endpoint providers
+  const builtInProviders = displayProviders.filter((p) => p.id !== "custom")
+  const customProviders = displayProviders.filter((p) => p.id === "custom")
 
   // Determine effective provider ID (manual selection > current model > default)
   const effectiveProviderId =
     selectedProviderId ||
     (currentModel ? models.find((m) => m.id === currentModel)?.provider : null) ||
-    (displayProviders.length > 0 ? displayProviders[0].id : null)
+    (builtInProviders.length > 0 ? builtInProviders[0].id : null)
+
+  // For custom endpoints, also track the endpoint ID
+  const effectiveEndpointId =
+    selectedEndpointId ||
+    (currentModel?.startsWith("custom:") ? currentModel.split(":")[1] : null) ||
+    null
 
   const selectedModel = models.find((m) => m.id === currentModel)
-  const filteredModels = effectiveProviderId
-    ? models.filter((m) => m.provider === effectiveProviderId)
-    : []
-  const selectedProvider = displayProviders.find((p) => p.id === effectiveProviderId)
+
+  // Filter models based on provider and endpoint
+  const filteredModels = (() => {
+    if (effectiveProviderId === "custom" && effectiveEndpointId) {
+      return models.filter((m) => m.provider === "custom" && m.endpointId === effectiveEndpointId)
+    }
+    if (effectiveProviderId) {
+      return models.filter((m) => m.provider === effectiveProviderId && m.provider !== "custom")
+    }
+    return []
+  })()
+
+  const selectedProvider = builtInProviders.find((p) => p.id === effectiveProviderId)
+  const selectedCustomEndpoint =
+    effectiveProviderId === "custom" && effectiveEndpointId
+      ? customEndpoints.find((e) => e.id === effectiveEndpointId)
+      : null
 
   function handleProviderClick(provider: Provider): void {
     setSelectedProviderId(provider.id)
+    setSelectedEndpointId(null)
+  }
+
+  function handleCustomEndpointClick(endpoint: CustomEndpoint): void {
+    setSelectedProviderId("custom")
+    setSelectedEndpointId(endpoint.id)
   }
 
   function handleModelSelect(modelId: string): void {
@@ -101,6 +159,26 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
       // Refresh providers after dialog closes
       loadProviders()
       loadModels()
+    }
+  }
+
+  function handleAddEndpoint(): void {
+    setEditingEndpoint(null)
+    setEndpointDialogOpen(true)
+  }
+
+  function handleEditEndpoint(endpoint: CustomEndpoint): void {
+    setEditingEndpoint(endpoint)
+    setEndpointDialogOpen(true)
+  }
+
+  function handleEndpointDialogClose(isOpen: boolean): void {
+    setEndpointDialogOpen(isOpen)
+    if (!isOpen) {
+      // Refresh everything after dialog closes
+      loadProviders()
+      loadModels()
+      loadCustomEndpoints()
     }
   }
 
@@ -131,12 +209,13 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
         >
           <div className="flex min-h-[240px]">
             {/* Provider column */}
-            <div className="w-[140px] border-r border-border p-2 bg-muted/30">
+            <div className="w-[160px] border-r border-border p-2 bg-muted/30 flex flex-col">
               <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-2 py-1.5">
                 Provider
               </div>
-              <div className="space-y-0.5">
-                {displayProviders.map((provider) => {
+              <div className="space-y-0.5 flex-1 overflow-y-auto">
+                {/* Built-in providers */}
+                {builtInProviders.map((provider) => {
                   const Icon = PROVIDER_ICONS[provider.id]
                   return (
                     <button
@@ -144,7 +223,7 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
                       onClick={() => handleProviderClick(provider)}
                       className={cn(
                         "w-full flex items-center gap-1.5 px-2 py-1 rounded-sm text-xs transition-colors text-left",
-                        effectiveProviderId === provider.id
+                        effectiveProviderId === provider.id && effectiveProviderId !== "custom"
                           ? "bg-muted text-foreground"
                           : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                       )}
@@ -157,7 +236,59 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
                     </button>
                   )
                 })}
+
+                {/* Custom endpoints section */}
+                {customEndpoints.length > 0 && (
+                  <>
+                    <div className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider px-2 py-1.5 mt-2 border-t border-border pt-2">
+                      Custom
+                    </div>
+                    {customEndpoints.map((endpoint) => {
+                      const matchingProvider = customProviders.find(
+                        (p) => p.endpointId === endpoint.id
+                      )
+                      const isSelected =
+                        effectiveProviderId === "custom" && effectiveEndpointId === endpoint.id
+
+                      return (
+                        <div key={endpoint.id} className="flex items-center gap-0.5">
+                          <button
+                            onClick={() => handleCustomEndpointClick(endpoint)}
+                            className={cn(
+                              "flex-1 flex items-center gap-1.5 px-2 py-1 rounded-sm text-xs transition-colors text-left",
+                              isSelected
+                                ? "bg-muted text-foreground"
+                                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                            )}
+                          >
+                            <Server className="size-3.5 shrink-0" />
+                            <span className="flex-1 truncate">{endpoint.name}</span>
+                            {matchingProvider && !matchingProvider.hasApiKey && (
+                              <AlertCircle className="size-3 text-status-warning shrink-0" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => handleEditEndpoint(endpoint)}
+                            className="p-1 rounded-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                            title="Edit endpoint"
+                          >
+                            <Settings className="size-3" />
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
               </div>
+
+              {/* Add endpoint button */}
+              <button
+                onClick={handleAddEndpoint}
+                className="w-full flex items-center gap-1.5 px-2 py-1.5 rounded-sm text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors mt-2 border-t border-border pt-2"
+              >
+                <Plus className="size-3.5" />
+                <span>Add Endpoint</span>
+              </button>
             </div>
 
             {/* Models column */}
@@ -166,8 +297,21 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
                 Model
               </div>
 
-              {selectedProvider && !selectedProvider.hasApiKey ? (
-                // No API key configured
+              {/* Custom endpoint with no models discovered yet */}
+              {effectiveProviderId === "custom" &&
+              selectedCustomEndpoint &&
+              filteredModels.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-[180px] px-4 text-center">
+                  <Server className="size-6 text-muted-foreground mb-2" />
+                  <p className="text-xs text-muted-foreground mb-3">
+                    No models discovered for {selectedCustomEndpoint.name}
+                  </p>
+                  <Button size="sm" onClick={() => handleEditEndpoint(selectedCustomEndpoint)}>
+                    Configure Endpoint
+                  </Button>
+                </div>
+              ) : selectedProvider && !selectedProvider.hasApiKey ? (
+                // No API key configured for built-in provider
                 <div className="flex flex-col items-center justify-center h-[180px] px-4 text-center">
                   <Key className="size-6 text-muted-foreground mb-2" />
                   <p className="text-xs text-muted-foreground mb-3">
@@ -192,7 +336,10 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
                             : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                         )}
                       >
-                        <span className="flex-1 truncate">{model.id}</span>
+                        <span className="flex-1 truncate">
+                          {/* For custom models, show just the model name without the prefix */}
+                          {model.provider === "custom" ? model.model : model.id}
+                        </span>
                         {currentModel === model.id && (
                           <Check className="size-3.5 shrink-0 text-foreground" />
                         )}
@@ -204,14 +351,25 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
                     )}
                   </div>
 
-                  {/* Configure API key link for providers that have a key */}
-                  {selectedProvider?.hasApiKey && (
+                  {/* Configure API key link for built-in providers that have a key */}
+                  {selectedProvider?.hasApiKey && effectiveProviderId !== "custom" && (
                     <button
                       onClick={() => handleConfigureApiKey(selectedProvider)}
                       className="w-full flex items-center gap-2 px-2 py-1.5 rounded-sm text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors mt-2 border-t border-border pt-2"
                     >
                       <Key className="size-3.5" />
                       <span>Edit API Key</span>
+                    </button>
+                  )}
+
+                  {/* Configure endpoint link for custom endpoints */}
+                  {effectiveProviderId === "custom" && selectedCustomEndpoint && (
+                    <button
+                      onClick={() => handleEditEndpoint(selectedCustomEndpoint)}
+                      className="w-full flex items-center gap-2 px-2 py-1.5 rounded-sm text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors mt-2 border-t border-border pt-2"
+                    >
+                      <Settings className="size-3.5" />
+                      <span>Edit Endpoint</span>
                     </button>
                   )}
                 </div>
@@ -225,6 +383,17 @@ export function ModelSwitcher({ threadId }: ModelSwitcherProps): React.JSX.Eleme
         open={apiKeyDialogOpen}
         onOpenChange={handleApiKeyDialogClose}
         provider={apiKeyProvider}
+      />
+
+      <CustomEndpointDialog
+        open={endpointDialogOpen}
+        onOpenChange={handleEndpointDialogClose}
+        endpoint={editingEndpoint}
+        onSave={() => {
+          loadProviders()
+          loadModels()
+          loadCustomEndpoints()
+        }}
       />
     </>
   )

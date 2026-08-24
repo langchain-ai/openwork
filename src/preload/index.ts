@@ -1,5 +1,14 @@
 import { contextBridge, ipcRenderer } from "electron"
-import type { Thread, ModelConfig, Provider, StreamEvent, HITLDecision } from "../main/types"
+import type {
+  Thread,
+  ModelConfig,
+  Provider,
+  StreamEvent,
+  HITLDecision,
+  CustomEndpoint,
+  CreateEndpointParams,
+  UpdateEndpointParams
+} from "../main/types"
 
 // Simple electron API - replaces @electron-toolkit/preload
 const electronAPI = {
@@ -148,6 +157,32 @@ const api = {
     },
     deleteApiKey: (provider: string): Promise<void> => {
       return ipcRenderer.invoke("models:deleteApiKey", provider)
+    }
+  },
+  endpoints: {
+    list: (): Promise<CustomEndpoint[]> => {
+      return ipcRenderer.invoke("endpoints:list")
+    },
+    get: (id: string): Promise<CustomEndpoint | null> => {
+      return ipcRenderer.invoke("endpoints:get", id)
+    },
+    create: (params: CreateEndpointParams): Promise<CustomEndpoint> => {
+      return ipcRenderer.invoke("endpoints:create", params)
+    },
+    update: (params: UpdateEndpointParams): Promise<CustomEndpoint> => {
+      return ipcRenderer.invoke("endpoints:update", params)
+    },
+    delete: (id: string): Promise<void> => {
+      return ipcRenderer.invoke("endpoints:delete", id)
+    },
+    discoverModels: (id: string): Promise<string[]> => {
+      return ipcRenderer.invoke("endpoints:discoverModels", id)
+    },
+    testConnection: (
+      baseUrl: string,
+      apiKey: string
+    ): Promise<{ success: boolean; models?: string[]; error?: string }> => {
+      return ipcRenderer.invoke("endpoints:testConnection", { baseUrl, apiKey })
     }
   },
   workspace: {

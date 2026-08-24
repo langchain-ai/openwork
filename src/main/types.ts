@@ -80,12 +80,14 @@ export interface Run {
 }
 
 // Provider configuration
-export type ProviderId = "anthropic" | "openai" | "google" | "ollama"
+export type ProviderId = "anthropic" | "openai" | "google" | "ollama" | "custom"
 
 export interface Provider {
   id: ProviderId
   name: string
   hasApiKey: boolean
+  // For custom endpoints, reference the endpoint ID
+  endpointId?: string
 }
 
 // Model configuration
@@ -96,6 +98,29 @@ export interface ModelConfig {
   model: string
   description?: string
   available: boolean
+  // For custom endpoint models, reference the endpoint ID
+  endpointId?: string
+}
+
+// Custom OpenAI-compatible endpoint configuration
+export interface CustomEndpoint {
+  id: string // Unique ID (e.g., "azure-prod", "local-llm")
+  name: string // Display name
+  baseUrl: string // Base URL (e.g., "https://api.openai.com/v1")
+  models?: string[] // Discovered models (cached)
+}
+
+// IPC params for custom endpoints
+export interface CreateEndpointParams {
+  id: string
+  name: string
+  baseUrl: string
+  apiKey: string
+}
+
+export interface UpdateEndpointParams {
+  id: string
+  updates: Partial<Omit<CustomEndpoint, "id">> & { apiKey?: string }
 }
 
 // Subagent types (from deepagentsjs)
