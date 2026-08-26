@@ -11,7 +11,7 @@
 
 import { spawn } from "node:child_process"
 import { randomUUID } from "node:crypto"
-import { FilesystemBackend, type ExecuteResponse, type SandboxBackendProtocol } from "deepagents"
+import { FilesystemBackend, type ExecuteResponse, type SandboxBackendProtocolV2 } from "deepagents"
 
 /**
  * Options for LocalSandbox configuration.
@@ -50,7 +50,7 @@ export interface LocalSandboxOptions {
  * console.log('Exit code:', result.exitCode);
  * ```
  */
-export class LocalSandbox extends FilesystemBackend implements SandboxBackendProtocol {
+export class LocalSandbox extends FilesystemBackend implements SandboxBackendProtocolV2 {
   /** Unique identifier for this sandbox instance */
   readonly id: string
 
