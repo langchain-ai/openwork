@@ -83,10 +83,47 @@ function getModelInstance(
     model.startsWith("o4")
   ) {
     const apiKey = getApiKey("openai")
+
+    // Check for custom OpenAI-compatible endpoint (e.g., Azure, proxy, Ollama, or local deployment)
+    const customBaseURL = process.env.OPENAI_API_BASE
+    const apiVersion = process.env.OPENAI_API_VERSION
+    const apiType = process.env.OPENAI_API_TYPE
+
+    if (customBaseURL) {
+      console.log("[Runtime] Using custom OpenAI endpoint:", customBaseURL)
+      if (apiType) {
+        console.log("[Runtime] API type:", apiType)
+      }
+      if (apiVersion) {
+        console.log("[Runtime] API version:", apiVersion)
+      }
+
+      // Azure OpenAI uses 'api-key' header instead of 'Authorization: Bearer'
+      const isAzure = apiType === "azure"
+
+      // Some endpoints (like Ollama) don't require API keys
+      console.log("[Runtime] OpenAI API key present:", !!apiKey)
+
+      return new ChatOpenAI({
+        model,
+        // For Azure, we pass the key via defaultHeaders instead of openAIApiKey
+        // to avoid sending both Authorization and api-key headers
+        // For local endpoints (Ollama, etc.), apiKey can be undefined
+        openAIApiKey: isAzure ? undefined : apiKey || "not-needed",
+        configuration: {
+          baseURL: customBaseURL,
+          defaultQuery: apiVersion ? { "api-version": apiVersion } : undefined,
+          defaultHeaders: isAzure && apiKey ? { "api-key": apiKey } : undefined
+        }
+      })
+    }
+
+    // Standard OpenAI requires an API key
     console.log("[Runtime] OpenAI API key present:", !!apiKey)
     if (!apiKey) {
       throw new Error("OpenAI API key not configured")
     }
+
     return new ChatOpenAI({
       model,
       openAIApiKey: apiKey
