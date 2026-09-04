@@ -1,3 +1,4 @@
+import { fixupPluginRules } from "@eslint/compat"
 import { defineConfig } from "eslint/config"
 import eslint from "@eslint/js"
 import tseslint from "@electron-toolkit/eslint-config-ts"
@@ -10,8 +11,18 @@ export default defineConfig(
   { ignores: ["**/node_modules", "**/dist", "**/out"] },
   eslint.configs.recommended,
   tseslint.configs.recommended,
-  eslintPluginReact.configs.flat.recommended,
-  eslintPluginReact.configs.flat["jsx-runtime"],
+  {
+    ...eslintPluginReact.configs.flat.recommended,
+    plugins: {
+      react: fixupPluginRules(eslintPluginReact)
+    }
+  },
+  {
+    ...eslintPluginReact.configs.flat["jsx-runtime"],
+    plugins: {
+      react: fixupPluginRules(eslintPluginReact)
+    }
+  },
   {
     settings: {
       react: {
