@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createDeepAgent } from "deepagents"
 import { getDefaultModel } from "../ipc/models"
-import { getApiKey, getThreadCheckpointPath } from "../storage"
+import { getApiKey, getThreadCheckpointPath, getBaseUrl } from "../storage"
 import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatOpenAI } from "@langchain/openai"
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai"
@@ -60,7 +60,8 @@ export async function closeCheckpointer(threadId: string): Promise<void> {
 
 // Get the appropriate model instance based on configuration
 function getModelInstance(
-  modelId?: string
+  modelId?: string,
+  customConfig?: { base_url?: string }
 ): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
   const model = modelId || getDefaultModel()
   console.log("[Runtime] Using model:", model)
@@ -72,10 +73,22 @@ function getModelInstance(
     if (!apiKey) {
       throw new Error("Anthropic API key not configured")
     }
-    return new ChatAnthropic({
+    
+    const config: any = {
       model,
       anthropicApiKey: apiKey
-    })
+    }
+    
+    // Add base URL if provided in customConfig or from storage
+    const baseUrl = customConfig?.base_url || getBaseUrl("anthropic")
+    if (baseUrl) {
+      console.log("[Runtime] Using custom base URL for Anthropic:", baseUrl)
+      config.clientOptions = {
+        baseURL: baseUrl
+      }
+    }
+    
+    return new ChatAnthropic(config)
   } else if (
     model.startsWith("gpt") ||
     model.startsWith("o1") ||
@@ -87,20 +100,42 @@ function getModelInstance(
     if (!apiKey) {
       throw new Error("OpenAI API key not configured")
     }
-    return new ChatOpenAI({
+    
+    const config: any = {
       model,
       openAIApiKey: apiKey
-    })
+    }
+    
+    // Add base URL if provided in customConfig or from storage
+    const baseUrl = customConfig?.base_url || getBaseUrl("openai")
+    if (baseUrl) {
+      console.log("[Runtime] Using custom base URL for OpenAI:", baseUrl)
+      config.configuration = {
+        baseURL: baseUrl
+      }
+    }
+    
+    return new ChatOpenAI(config)
   } else if (model.startsWith("gemini")) {
     const apiKey = getApiKey("google")
     console.log("[Runtime] Google API key present:", !!apiKey)
     if (!apiKey) {
       throw new Error("Google API key not configured")
     }
-    return new ChatGoogleGenerativeAI({
+    
+    const config: any = {
       model,
       apiKey: apiKey
-    })
+    }
+    
+    // Add base URL if provided in customConfig or from storage
+    const baseUrl = customConfig?.base_url || getBaseUrl("google")
+    if (baseUrl) {
+      console.log("[Runtime] Using custom base URL for Google:", baseUrl)
+      config.baseUrl = baseUrl
+    }
+    
+    return new ChatGoogleGenerativeAI(config)
   }
 
   // Default to model string (let deepagents handle it)
