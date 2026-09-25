@@ -1,4 +1,13 @@
-import type { Thread, ModelConfig, Provider, StreamEvent, HITLDecision } from "../main/types"
+import type {
+  Thread,
+  ModelConfig,
+  Provider,
+  StreamEvent,
+  HITLDecision,
+  CustomEndpoint,
+  CreateEndpointParams,
+  UpdateEndpointParams
+} from "../main/types"
 
 interface ElectronAPI {
   ipcRenderer: {
@@ -52,6 +61,18 @@ interface CustomAPI {
     setDefault: (modelId: string) => Promise<void>
     setApiKey: (provider: string, apiKey: string) => Promise<void>
     getApiKey: (provider: string) => Promise<string | null>
+  }
+  endpoints: {
+    list: () => Promise<CustomEndpoint[]>
+    get: (id: string) => Promise<CustomEndpoint | null>
+    create: (params: CreateEndpointParams) => Promise<CustomEndpoint>
+    update: (params: UpdateEndpointParams) => Promise<CustomEndpoint>
+    delete: (id: string) => Promise<void>
+    discoverModels: (id: string) => Promise<string[]>
+    testConnection: (
+      baseUrl: string,
+      apiKey: string
+    ) => Promise<{ success: boolean; models?: string[]; error?: string }>
   }
   workspace: {
     get: (threadId?: string) => Promise<string | null>
