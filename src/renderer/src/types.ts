@@ -39,6 +39,8 @@ export interface ModelConfig {
   model: string
   description?: string
   available: boolean
+  base_url?: string  // Custom base URL for proxy/gateway support
+  custom?: boolean    // Flag to identify custom models
 }
 
 // Subagent types (from deepagentsjs)
