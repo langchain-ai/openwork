@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import type { Thread, ModelConfig, Provider } from "@/types"
+import type { Thread, ModelConfig, Provider, CustomEndpoint, CreateEndpointParams } from "@/types"
 
 interface AppState {
   // Threads
@@ -9,6 +9,9 @@ interface AppState {
   // Models and Providers (global, not per-thread)
   models: ModelConfig[]
   providers: Provider[]
+
+  // Custom endpoints
+  customEndpoints: CustomEndpoint[]
 
   // Right panel state (UI state, not thread data)
   rightPanelTab: "todos" | "files" | "subagents"
@@ -37,6 +40,12 @@ interface AppState {
   setApiKey: (providerId: string, apiKey: string) => Promise<void>
   deleteApiKey: (providerId: string) => Promise<void>
 
+  // Custom endpoint actions
+  loadEndpoints: () => Promise<void>
+  createEndpoint: (params: CreateEndpointParams) => Promise<CustomEndpoint>
+  deleteEndpoint: (id: string) => Promise<void>
+  discoverEndpointModels: (id: string) => Promise<string[]>
+
   // Panel actions
   setRightPanelTab: (tab: "todos" | "files" | "subagents") => void
 
@@ -58,6 +67,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   currentThreadId: null,
   models: [],
   providers: [],
+  customEndpoints: [],
   rightPanelTab: "todos",
   settingsOpen: false,
   sidebarCollapsed: false,
@@ -161,6 +171,37 @@ export const useAppStore = create<AppState>((set, get) => ({
     // Reload providers and models to update availability
     await get().loadProviders()
     await get().loadModels()
+  },
+
+  // Custom endpoint actions
+  loadEndpoints: async () => {
+    const customEndpoints = await window.api.endpoints.list()
+    set({ customEndpoints })
+  },
+
+  createEndpoint: async (params: CreateEndpointParams) => {
+    const endpoint = await window.api.endpoints.create(params)
+    // Reload endpoints, providers, and models
+    await get().loadEndpoints()
+    await get().loadProviders()
+    await get().loadModels()
+    return endpoint
+  },
+
+  deleteEndpoint: async (id: string) => {
+    await window.api.endpoints.delete(id)
+    // Reload endpoints, providers, and models
+    await get().loadEndpoints()
+    await get().loadProviders()
+    await get().loadModels()
+  },
+
+  discoverEndpointModels: async (id: string) => {
+    const models = await window.api.endpoints.discoverModels(id)
+    // Reload endpoints and models to reflect discovered models
+    await get().loadEndpoints()
+    await get().loadModels()
+    return models
   },
 
   // Panel actions
