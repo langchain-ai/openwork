@@ -54,6 +54,11 @@ export interface SetApiKeyParams {
   apiKey: string
 }
 
+export interface SetBaseUrlParams {
+  provider: string
+  baseUrl: string
+}
+
 // =============================================================================
 
 export interface Thread {
@@ -96,6 +101,8 @@ export interface ModelConfig {
   model: string
   description?: string
   available: boolean
+  base_url?: string  // Custom base URL for proxy/gateway support
+  custom?: boolean    // Flag to identify custom models
 }
 
 // Subagent types (from deepagentsjs)
