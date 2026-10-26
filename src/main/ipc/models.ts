@@ -53,23 +53,6 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     description: "Fastest model with near-frontier intelligence",
     available: true
   },
-  // Anthropic Claude legacy models
-  {
-    id: "claude-opus-4-1-20250805",
-    name: "Claude Opus 4.1",
-    provider: "anthropic",
-    model: "claude-opus-4-1-20250805",
-    description: "Previous generation premium model with extended thinking",
-    available: true
-  },
-  {
-    id: "claude-sonnet-4-20250514",
-    name: "Claude Sonnet 4",
-    provider: "anthropic",
-    model: "claude-sonnet-4-20250514",
-    description: "Fast and capable previous generation model",
-    available: true
-  },
   // OpenAI GPT-5 series (latest as of Jan 2026)
   {
     id: "gpt-5.2",
@@ -96,30 +79,6 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     description: "Advanced reasoning for complex problem-solving",
     available: true
   },
-  {
-    id: "o3-mini",
-    name: "o3 Mini",
-    provider: "openai",
-    model: "o3-mini",
-    description: "Cost-effective reasoning with faster response times",
-    available: true
-  },
-  {
-    id: "o4-mini",
-    name: "o4 Mini",
-    provider: "openai",
-    model: "o4-mini",
-    description: "Fast, efficient reasoning model succeeding o3",
-    available: true
-  },
-  {
-    id: "o1",
-    name: "o1",
-    provider: "openai",
-    model: "o1",
-    description: "Premium reasoning for research, coding, math and science",
-    available: true
-  },
   // OpenAI GPT-4 series
   {
     id: "gpt-4.1",
@@ -135,14 +94,6 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     provider: "openai",
     model: "gpt-4.1-mini",
     description: "Faster, smaller version balancing performance and efficiency",
-    available: true
-  },
-  {
-    id: "gpt-4.1-nano",
-    name: "GPT-4.1 Nano",
-    provider: "openai",
-    model: "gpt-4.1-nano",
-    description: "Most cost-efficient for lighter tasks",
     available: true
   },
   {
