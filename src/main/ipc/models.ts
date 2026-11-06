@@ -38,10 +38,10 @@ const AVAILABLE_MODELS: ModelConfig[] = [
     available: true
   },
   {
-    id: "claude-sonnet-4-5-20250929",
-    name: "Claude Sonnet 4.5",
+    id: "claude-sonnet-5-5",
+    name: "Claude Sonnet 5.5",
     provider: "anthropic",
-    model: "claude-sonnet-4-5-20250929",
+    model: "claude-sonnet-5-5",
     description: "Best balance of intelligence, speed, and cost for agents",
     available: true
   },
@@ -216,7 +216,7 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
 
   // Get default model
   ipcMain.handle("models:getDefault", async () => {
-    return store.get("defaultModel", "claude-sonnet-4-5-20250929") as string
+    return getDefaultModel()
   })
 
   // Set default model
@@ -518,6 +518,19 @@ export function registerModelHandlers(ipcMain: IpcMain): void {
 // Re-export getApiKey from storage for use in agent runtime
 export { getApiKey } from "../storage"
 
+// Claude models Anthropic has retired, mapped to the replacement it lists
+// (https://platform.claude.com/docs/en/about-claude/model-deprecations), so a
+// saved default or an existing thread keeps working after a shutdown.
+const RETIRED_MODEL_REPLACEMENTS: Record<string, string> = {
+  "claude-sonnet-4-5-20250929": "claude-sonnet-5-5", // retires 2026-11-30
+  "claude-sonnet-4-20250514": "claude-sonnet-5-5", // retired 2026-06-15
+  "claude-opus-4-1-20250805": "claude-opus-4-8" // retired 2026-08-05
+}
+
+export function resolveModelId(modelId: string): string {
+  return RETIRED_MODEL_REPLACEMENTS[modelId] ?? modelId
+}
+
 export function getDefaultModel(): string {
-  return store.get("defaultModel", "claude-sonnet-4-5-20250929") as string
+  return resolveModelId(store.get("defaultModel", "claude-sonnet-5-5") as string)
 }

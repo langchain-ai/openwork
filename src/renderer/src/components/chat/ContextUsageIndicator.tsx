@@ -7,6 +7,7 @@ import type { TokenUsage } from "@/lib/thread-context"
 // These are approximate and may vary
 const MODEL_CONTEXT_LIMITS: Record<string, number> = {
   // Anthropic models
+  "claude-sonnet-5-5": 1_000_000,
   "claude-opus-4-5-20251101": 200_000,
   "claude-sonnet-4-5-20250929": 200_000,
   "claude-3-5-sonnet-20241022": 200_000,
