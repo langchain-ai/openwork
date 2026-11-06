@@ -100,7 +100,7 @@ export async function initializeDatabase(): Promise<SqlJsDatabase> {
       assistant_id TEXT PRIMARY KEY,
       graph_id TEXT NOT NULL,
       name TEXT,
-      model TEXT DEFAULT 'claude-sonnet-4-5-20250929',
+      model TEXT DEFAULT 'claude-sonnet-5-5',
       config TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
