@@ -7,6 +7,9 @@
 [license-badge]: https://img.shields.io/badge/License-MIT-yellow.svg
 [license-url]: https://opensource.org/licenses/MIT
 
+> [!WARNING]
+> openwork is no longer maintained and this repository is archived. The `openwork` npm package will not receive further updates. To build deep agents, use [deepagentsjs](https://github.com/langchain-ai/deepagentsjs).
+
 A desktop interface for [deepagentsjs](https://github.com/langchain-ai/deepagentsjs) — an opinionated harness for building deep agents with filesystem capabilities planning, and subagent delegation.
 
 ![openwork screenshot](docs/screenshot.png)
