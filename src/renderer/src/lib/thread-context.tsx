@@ -104,7 +104,7 @@ const createDefaultThreadState = (): ThreadState => ({
   subagents: [],
   pendingApproval: null,
   error: null,
-  currentModel: "claude-sonnet-4-5-20250929",
+  currentModel: "claude-sonnet-5-5",
   openFiles: [],
   activeTab: "agent",
   fileContents: {},

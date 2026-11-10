@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import { createDeepAgent } from "deepagents"
-import { getDefaultModel } from "../ipc/models"
+import { getDefaultModel, resolveModelId } from "../ipc/models"
 import { getApiKey, getThreadCheckpointPath } from "../storage"
 import { ChatAnthropic } from "@langchain/anthropic"
 import { ChatOpenAI } from "@langchain/openai"
@@ -62,7 +62,7 @@ export async function closeCheckpointer(threadId: string): Promise<void> {
 function getModelInstance(
   modelId?: string
 ): ChatAnthropic | ChatOpenAI | ChatGoogleGenerativeAI | string {
-  const model = modelId || getDefaultModel()
+  const model = modelId ? resolveModelId(modelId) : getDefaultModel()
   console.log("[Runtime] Using model:", model)
 
   // Determine provider from model ID
